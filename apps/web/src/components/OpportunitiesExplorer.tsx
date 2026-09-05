@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Opportunity } from '@/types/api';
 import OpportunityCard from '@/components/OpportunityCard';
 import PostEventModal from '@/components/PostEventModal';
-import { Search, PlusCircle, Filter } from 'lucide-react';
+import { Search, PlusCircle, Filter, RefreshCw } from 'lucide-react';
 import { fetchOpportunities } from '@/lib/api';
 
 interface OpportunitiesExplorerProps {
@@ -17,6 +17,7 @@ const CATEGORIES = [
   { label: 'Internships', value: 'internship' },
   { label: 'Workshops', value: 'workshop' },
   { label: 'Events', value: 'event' },
+  { label: 'Research', value: 'research' },
 ];
 
 export default function OpportunitiesExplorer({ initialOpportunities }: OpportunitiesExplorerProps) {
@@ -25,6 +26,8 @@ export default function OpportunitiesExplorer({ initialOpportunities }: Opportun
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState('');
 
   async function handleFilterChange(type: string) {
     setSelectedType(type);
@@ -49,6 +52,26 @@ export default function OpportunitiesExplorer({ initialOpportunities }: Opportun
     setLoading(false);
   }
 
+  async function triggerAutoScraper() {
+    setSyncing(true);
+    setSyncMessage('');
+    try {
+      const res = await fetch('http://localhost:8000/api/v1/opportunities/sync', {
+        method: 'POST',
+      });
+      const data = await res.json();
+      setSyncMessage(
+        `Added ${data.new_opportunities_added} new event(s) from external sources!`
+      );
+      await reloadOpportunities();
+    } catch (err) {
+      setSyncMessage('Failed to trigger scraper. Make sure FastAPI is running on :8000');
+    } finally {
+      setSyncing(false);
+      setTimeout(() => setSyncMessage(''), 5000);
+    }
+  }
+
   return (
     <>
       <section id="explore" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -57,7 +80,7 @@ export default function OpportunitiesExplorer({ initialOpportunities }: Opportun
           <div>
             <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">Active Opportunities</h2>
             <p className="text-sm text-slate-400">
-              Browse competitions, hackathons, and research programs. Live from the DS-Connect PostgreSQL database.
+              Browse competitions, hackathons, and research programs. Live from the DS-Connect database.
             </p>
           </div>
 
@@ -70,9 +93,20 @@ export default function OpportunitiesExplorer({ initialOpportunities }: Opportun
                 placeholder="Search by title..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 w-56 sm:w-64"
+                className="bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 w-52 sm:w-64"
               />
             </form>
+
+            {/* Sync Scraper Button */}
+            <button
+              onClick={triggerAutoScraper}
+              disabled={syncing}
+              title="Automatically crawl Devpost and Kaggle for new opportunities"
+              className="bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 text-xs sm:text-sm font-medium px-3.5 py-2 rounded-lg transition flex items-center gap-1.5"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-indigo-400 ${syncing ? 'animate-spin' : ''}`} />
+              {syncing ? 'Syncing...' : 'Sync External Events'}
+            </button>
 
             {/* Post Event Trigger */}
             <button
@@ -84,6 +118,13 @@ export default function OpportunitiesExplorer({ initialOpportunities }: Opportun
             </button>
           </div>
         </div>
+
+        {syncMessage && (
+          <div className="mb-6 p-3 rounded-lg bg-indigo-950/80 border border-indigo-700/60 text-xs text-indigo-200 flex items-center gap-2 animate-fade-in">
+            <RefreshCw className="w-3.5 h-3.5 text-indigo-400" />
+            {syncMessage}
+          </div>
+        )}
 
         {/* Category Pills */}
         <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-6 scrollbar-none">

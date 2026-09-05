@@ -1,13 +1,14 @@
 from uuid import UUID
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.db.session import get_db
-from app.models.opportunity import Opportunity, opportunity_type_enum, opportunity_status_enum
+from app.models.opportunity import Opportunity
 from app.schemas.opportunity import OpportunityCreate, OpportunityResponse
 from app.core.security import get_optional_user
+from app.tasks.scrapers.sync_runner import run_all_scrapers
 
 router = APIRouter()
 
@@ -34,6 +35,16 @@ async def list_opportunities(
     result = await db.execute(query)
     return result.scalars().all()
 
+@router.post("/sync", summary="Trigger automated opportunity scraper")
+async def trigger_scraper_sync() -> Dict[str, Any]:
+    """
+    Executes the scraper engine to discover and ingest new hackathons
+    and competitions from Devpost, Kaggle, and open feeds.
+    Deduplicates automatically.
+    """
+    result = await run_all_scrapers()
+    return result
+
 @router.get("/{id}", response_model=OpportunityResponse, summary="Get opportunity details")
 async def get_opportunity(
     id: UUID,
@@ -57,7 +68,7 @@ async def create_opportunity(
     current_user: Optional[dict] = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Submit a new opportunity. Accepts authenticated user or falls back to admin for local dev."""
+    """Submit a new opportunity."""
     user_id = UUID(current_user["id"]) if current_user else DEFAULT_ADMIN_ID
 
     new_opp = Opportunity(

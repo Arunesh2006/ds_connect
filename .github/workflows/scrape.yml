@@ -1,0 +1,35 @@
+name: Scheduled Opportunity Scraper
+
+on:
+  schedule:
+    - cron: '0 6 * * *'  # Automatically runs every day at 6:00 AM UTC
+  workflow_dispatch:      # Allows manual trigger from GitHub UI anytime
+
+jobs:
+  scrape-and-sync:
+    name: Crawl External Hackathons & Sync Database
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: apps/api/requirements.txt
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r apps/api/requirements.txt
+
+      - name: Run Scraper Engine
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          cd apps/api
+          python -m app.tasks.scrapers.sync_runner
