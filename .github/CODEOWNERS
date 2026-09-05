@@ -1,0 +1,13 @@
+# Global default
+* @team-leads
+
+# Backend and database
+/apps/api/ @backend-lead
+/supabase/ @backend-lead
+/infra/ @backend-lead
+
+# Frontend and UI
+/apps/web/ @frontend-lead
+
+# Shared CI/CD and configs
+/.github/ @backend-lead @frontend-lead

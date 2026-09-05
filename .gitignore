@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# Environment files & secrets (NEVER COMMIT)
+.env
+.env.*
+!.env.example
+apps/api/.env
+apps/api/.env.*
+apps/web/.env
+apps/web/.env.*
+
+# Supabase Local
+.branches/
+.temp/
+supabase/.branches/
+supabase/.temp/
+
+# Build outputs
+.next/
+apps/web/.next/
+out/
+dist/
+build/
+*.egg-info/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# IDE & OS
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
