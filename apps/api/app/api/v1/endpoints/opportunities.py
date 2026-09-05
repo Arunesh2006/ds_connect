@@ -2,28 +2,30 @@ from uuid import UUID
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
+from sqlalchemy import select
 
 from app.db.session import get_db
-from app.models.opportunity import Opportunity
-from app.schemas.opportunity import OpportunityCreate, OpportunityResponse, OpportunityUpdate
-from app.core.security import get_current_user
+from app.models.opportunity import Opportunity, opportunity_type_enum, opportunity_status_enum
+from app.schemas.opportunity import OpportunityCreate, OpportunityResponse
+from app.core.security import get_optional_user
 
 router = APIRouter()
+
+DEFAULT_ADMIN_ID = UUID("00000000-0000-0000-0000-000000000001")
 
 @router.get("", response_model=List[OpportunityResponse], summary="List opportunities")
 async def list_opportunities(
     type: Optional[str] = Query(None, description="Filter by type (hackathon, event, internship)"),
     status: str = Query("published", description="Filter by status"),
     search: Optional[str] = Query(None, description="Search term in title"),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db)
 ):
-    """Retrieve published opportunities with optional filtering and pagination."""
+    """Retrieve published opportunities with optional filtering and search."""
     query = select(Opportunity).where(Opportunity.status == status)
     
-    if type:
+    if type and type != "all":
         query = query.where(Opportunity.type == type)
     if search:
         query = query.where(Opportunity.title.ilike(f"%{search}%"))
@@ -52,10 +54,12 @@ async def get_opportunity(
 @router.post("", response_model=OpportunityResponse, status_code=status.HTTP_201_CREATED, summary="Create opportunity")
 async def create_opportunity(
     opportunity_in: OpportunityCreate,
-    current_user: dict = Depends(get_current_user),
+    current_user: Optional[dict] = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Submit a new opportunity. Requires Supabase authentication."""
+    """Submit a new opportunity. Accepts authenticated user or falls back to admin for local dev."""
+    user_id = UUID(current_user["id"]) if current_user else DEFAULT_ADMIN_ID
+
     new_opp = Opportunity(
         title=opportunity_in.title,
         description=opportunity_in.description,
@@ -66,7 +70,7 @@ async def create_opportunity(
         location=opportunity_in.location,
         external_link=opportunity_in.external_link,
         tags=opportunity_in.tags,
-        submitted_by=UUID(current_user["id"])
+        submitted_by=user_id
     )
     db.add(new_opp)
     await db.commit()
