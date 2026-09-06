@@ -14,10 +14,13 @@ venv/
 .env
 .env.*
 !.env.example
-apps/api/.env
-apps/api/.env.*
-apps/web/.env
-apps/web/.env.*
+backend/.env
+backend/.env.*
+frontend/.env
+frontend/.env.*
+frontend/.env.local
+!backend/.env.example
+!frontend/.env.example
 
 # Supabase Local
 .branches/
@@ -27,8 +30,9 @@ supabase/.temp/
 
 # Build outputs
 .next/
-apps/web/.next/
+frontend/.next/
 out/
+frontend/out/
 dist/
 build/
 *.egg-info/
