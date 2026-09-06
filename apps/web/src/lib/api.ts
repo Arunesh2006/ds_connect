@@ -1,4 +1,15 @@
-import { Opportunity, OpportunityCreate, TeamRequest } from '@/types/api';
+import {
+  Opportunity,
+  OpportunityCreate,
+  TeamRequest,
+  Project,
+  ProjectCreate,
+  Placement,
+  PlacementCreate,
+  Achievement,
+  AchievementCreate,
+  Profile
+} from '@/types/api';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
 
@@ -24,20 +35,101 @@ export async function createOpportunity(data: OpportunityCreate): Promise<Opport
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error(`Failed to create opportunity: ${res.statusText}`);
+  if (!res.ok) throw new Error(`Failed to create opportunity`);
   return await res.json();
 }
 
-export async function fetchTeamRequests(opportunityId?: string): Promise<TeamRequest[]> {
+export async function fetchTeamRequests(): Promise<TeamRequest[]> {
   try {
-    const params = new URLSearchParams();
-    if (opportunityId) params.append('opportunity_id', opportunityId);
-    const url = `${API_BASE}/api/v1/team-requests${params.toString() ? `?${params.toString()}` : ''}`;
-    const res = await fetch(url, { cache: 'no-store' });
+    const res = await fetch(`${API_BASE}/api/v1/team-requests`, { cache: 'no-store' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   } catch (err) {
     console.error('Fetch team requests error:', err);
     return [];
+  }
+}
+
+export async function fetchProjects(): Promise<Project[]> {
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/projects`, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.error('Fetch projects error:', err);
+    return [];
+  }
+}
+
+export async function createProject(data: ProjectCreate): Promise<Project> {
+  const res = await fetch(`${API_BASE}/api/v1/projects`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(`Failed to create project`);
+  return await res.json();
+}
+
+export async function fetchPlacements(): Promise<Placement[]> {
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/placements`, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.error('Fetch placements error:', err);
+    return [];
+  }
+}
+
+export async function createPlacement(data: PlacementCreate): Promise<Placement> {
+  const res = await fetch(`${API_BASE}/api/v1/placements`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(`Failed to record placement`);
+  return await res.json();
+}
+
+export async function fetchAchievements(): Promise<Achievement[]> {
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/placements/achievements`, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.error('Fetch achievements error:', err);
+    return [];
+  }
+}
+
+export async function createAchievement(data: AchievementCreate): Promise<Achievement> {
+  const res = await fetch(`${API_BASE}/api/v1/placements/achievements`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(`Failed to record achievement`);
+  return await res.json();
+}
+
+export async function fetchMembers(): Promise<Profile[]> {
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/users`, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.error('Fetch members error:', err);
+    return [];
+  }
+}
+
+export async function fetchMyProfile(): Promise<Profile | null> {
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/users/me`, { cache: 'no-store' });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
   }
 }

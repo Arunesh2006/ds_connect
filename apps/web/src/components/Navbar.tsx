@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Sparkles, Calendar, Users, Briefcase, Award } from 'lucide-react';
+import { Sparkles, Calendar, Users, FolderGit2, Briefcase, UserCheck } from 'lucide-react';
 
 export default function Navbar() {
   return (
@@ -12,6 +12,7 @@ export default function Navbar() {
             <Sparkles className="w-5 h-5" />
           </div>
           <span>DS<span className="text-indigo-400">-Connect</span></span>
+          <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-indigo-950 border border-indigo-700 text-indigo-300 ml-1">Cohort</span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-300">
@@ -19,32 +20,31 @@ export default function Navbar() {
             <Calendar className="w-4 h-4 text-indigo-400" />
             Opportunities
           </Link>
-          <Link href="#teams" className="flex items-center gap-1.5 hover:text-white transition">
+          <Link href="/team-matching" className="flex items-center gap-1.5 hover:text-white transition">
             <Users className="w-4 h-4 text-purple-400" />
             Team Matcher
           </Link>
-          <Link href="#projects" className="flex items-center gap-1.5 hover:text-white transition">
-            <Award className="w-4 h-4 text-amber-400" />
-            Projects
+          <Link href="/projects" className="flex items-center gap-1.5 hover:text-white transition">
+            <FolderGit2 className="w-4 h-4 text-amber-400" />
+            Projects Showcase
           </Link>
-          <Link href="#placements" className="flex items-center gap-1.5 hover:text-white transition">
+          <Link href="/placements" className="flex items-center gap-1.5 hover:text-white transition">
             <Briefcase className="w-4 h-4 text-emerald-400" />
-            Placements
+            Placements & Wins
+          </Link>
+          <Link href="/members" className="flex items-center gap-1.5 hover:text-white transition">
+            <UserCheck className="w-4 h-4 text-sky-400" />
+            Cohort Members
           </Link>
         </nav>
 
         <div className="flex items-center gap-3">
-          <a
-            href="http://localhost:8000/docs"
-            target="_blank"
-            rel="noreferrer"
-            className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-md border border-slate-700 transition"
+          <Link
+            href="/members"
+            className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-1.5 rounded-lg border border-slate-700 transition"
           >
-            FastAPI Docs ↗
-          </a>
-          <button className="text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-md transition shadow-sm">
-            Sign In
-          </button>
+            My Profile
+          </Link>
         </div>
       </div>
     </header>
