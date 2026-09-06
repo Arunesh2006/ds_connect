@@ -15,7 +15,7 @@ class TeamRequestCreate(TeamRequestBase):
 
 class TeamRequestResponse(TeamRequestBase):
     id: UUID
-    requester_id: UUID
+    requester_id: Optional[UUID] = None
     current_members_count: int
     status: str
     created_at: datetime

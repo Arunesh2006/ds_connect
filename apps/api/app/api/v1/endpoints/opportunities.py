@@ -69,7 +69,7 @@ async def create_opportunity(
     db: AsyncSession = Depends(get_db)
 ):
     """Submit a new opportunity."""
-    user_id = UUID(current_user["id"]) if current_user else DEFAULT_ADMIN_ID
+    user_id = UUID(current_user["id"]) if current_user else None
 
     new_opp = Opportunity(
         title=opportunity_in.title,

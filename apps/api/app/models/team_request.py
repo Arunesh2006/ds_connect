@@ -16,7 +16,7 @@ class TeamRequest(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     opportunity_id = Column(UUID(as_uuid=True), ForeignKey("public.opportunities.id", ondelete="CASCADE"), nullable=False)
-    requester_id = Column(UUID(as_uuid=True), nullable=False)
+    requester_id = Column(UUID(as_uuid=True), nullable=True)
     title = Column(String, nullable=False)
     role_needed = Column(String, nullable=False)
     skills_required = Column(ARRAY(String), default=list, nullable=False)

@@ -10,14 +10,20 @@ class ProfileBase(BaseModel):
     avatar_url: Optional[str] = None
     college_year: Optional[int] = None
     role: str = "student"
+    responsibility: Optional[str] = None
     bio: Optional[str] = None
     skills: List[str] = []
     github_handle: Optional[str] = None
     linkedin_url: Optional[str] = None
 
+class ProfileCreate(ProfileBase):
+    pass
+
 class ProfileUpdate(BaseModel):
     name: Optional[str] = None
+    role: Optional[str] = None
     college_year: Optional[int] = None
+    responsibility: Optional[str] = None
     bio: Optional[str] = None
     skills: Optional[List[str]] = None
     github_handle: Optional[str] = None

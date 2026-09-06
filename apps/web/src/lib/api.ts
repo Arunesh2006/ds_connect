@@ -8,7 +8,8 @@ import {
   PlacementCreate,
   Achievement,
   AchievementCreate,
-  Profile
+  Profile,
+  ProfileCreate
 } from '@/types/api';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
@@ -133,3 +134,25 @@ export async function fetchMyProfile(): Promise<Profile | null> {
     return null;
   }
 }
+
+export async function createMember(data: ProfileCreate): Promise<Profile> {
+  const res = await fetch(`${API_BASE}/api/v1/users`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.detail || 'Failed to add cohort member');
+  }
+  return await res.json();
+}
+
+export async function deleteMember(id: string): Promise<boolean> {
+  const res = await fetch(`${API_BASE}/api/v1/users/${id}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error('Failed to delete member');
+  return true;
+}
+

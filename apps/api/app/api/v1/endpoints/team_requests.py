@@ -36,7 +36,7 @@ async def create_team_request(
     db: AsyncSession = Depends(get_db)
 ):
     """Post a new teammate search request."""
-    user_id = UUID(current_user["id"]) if current_user else DEFAULT_USER_ID
+    user_id = UUID(current_user["id"]) if current_user else None
 
     new_req = TeamRequest(
         opportunity_id=request_in.opportunity_id,

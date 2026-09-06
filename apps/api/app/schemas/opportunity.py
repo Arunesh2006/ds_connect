@@ -30,7 +30,7 @@ class OpportunityUpdate(BaseModel):
 class OpportunityResponse(OpportunityBase):
     id: UUID
     status: str
-    submitted_by: UUID
+    submitted_by: Optional[UUID] = None
     created_at: datetime
     updated_at: datetime
 

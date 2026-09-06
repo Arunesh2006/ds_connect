@@ -30,7 +30,7 @@ class Opportunity(Base):
     location = Column(String, default="Online", nullable=False)
     external_link = Column(String, nullable=True)
     tags = Column(ARRAY(String), default=list, nullable=False)
-    submitted_by = Column(UUID(as_uuid=True), nullable=False)
+    submitted_by = Column(UUID(as_uuid=True), nullable=True)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 

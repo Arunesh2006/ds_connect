@@ -9,7 +9,7 @@ class Placement(Base):
     __table_args__ = {"schema": "public"}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    student_id = Column(UUID(as_uuid=True), nullable=False)
+    student_id = Column(UUID(as_uuid=True), nullable=True)
     company = Column(String, nullable=False)
     role = Column(String, nullable=False)
     package_lpa = Column(Numeric(5, 2), nullable=True)
@@ -23,7 +23,7 @@ class Achievement(Base):
     __table_args__ = {"schema": "public"}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    student_id = Column(UUID(as_uuid=True), nullable=False)
+    student_id = Column(UUID(as_uuid=True), nullable=True)
     category = Column(String, nullable=False)
     title = Column(String, nullable=False)
     description = Column(Text, nullable=True)

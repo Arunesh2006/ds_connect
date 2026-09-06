@@ -16,7 +16,7 @@ class PlacementCreate(PlacementBase):
 
 class PlacementResponse(PlacementBase):
     id: UUID
-    student_id: UUID
+    student_id: Optional[UUID] = None
     is_verified: bool
     created_at: datetime
 
@@ -35,7 +35,7 @@ class AchievementCreate(AchievementBase):
 
 class AchievementResponse(AchievementBase):
     id: UUID
-    student_id: UUID
+    student_id: Optional[UUID] = None
     created_at: datetime
 
     class Config:

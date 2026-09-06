@@ -104,11 +104,25 @@ export interface Profile {
   email: string;
   avatar_url: string | null;
   college_year: number | null;
-  role: string;
+  role: 'student' | 'faculty' | 'admin' | 'mentor' | 'alumni';
+  responsibility: string | null;
   bio: string | null;
   skills: string[];
   github_handle: string | null;
   linkedin_url: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface ProfileCreate {
+  name: string;
+  email: string;
+  role: 'student' | 'faculty';
+  college_year?: number | null;
+  responsibility?: string;
+  bio?: string;
+  skills?: string[];
+  github_handle?: string;
+  linkedin_url?: string;
+  avatar_url?: string;
 }

@@ -15,7 +15,7 @@ class ProjectCreate(ProjectBase):
 
 class ProjectResponse(ProjectBase):
     id: UUID
-    owner_id: UUID
+    owner_id: Optional[UUID] = None
     created_at: datetime
     updated_at: datetime
 

@@ -14,7 +14,7 @@ class Project(Base):
     technologies = Column(ARRAY(String), default=list, nullable=False)
     repo_url = Column(String, nullable=True)
     live_url = Column(String, nullable=True)
-    owner_id = Column(UUID(as_uuid=True), nullable=False)
+    owner_id = Column(UUID(as_uuid=True), nullable=True)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 

@@ -5,7 +5,7 @@ from sqlalchemy.dialects.postgresql import UUID, ENUM
 from app.db.session import Base
 
 user_role_enum = ENUM(
-    'student', 'alumni', 'mentor', 'admin',
+    'student', 'alumni', 'mentor', 'faculty', 'admin',
     name='user_role',
     create_type=False
 )
@@ -14,12 +14,13 @@ class Profile(Base):
     __tablename__ = "profiles"
     __table_args__ = {"schema": "public"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False)
     avatar_url = Column(String, nullable=True)
     college_year = Column(Integer, nullable=True)
     role = Column(user_role_enum, default="student", nullable=False)
+    responsibility = Column(String, nullable=True)
     bio = Column(Text, nullable=True)
     skills = Column(ARRAY(String), default=list, nullable=False)
     github_handle = Column(String, nullable=True)

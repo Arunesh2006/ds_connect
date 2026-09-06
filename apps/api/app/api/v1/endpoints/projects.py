@@ -34,7 +34,7 @@ async def create_project(
     db: AsyncSession = Depends(get_db)
 ):
     """Publish a project showcase."""
-    user_id = UUID(current_user["id"]) if current_user else DEFAULT_USER_ID
+    user_id = UUID(current_user["id"]) if current_user else None
     new_proj = Project(
         title=project_in.title,
         description=project_in.description,

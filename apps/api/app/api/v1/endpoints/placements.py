@@ -27,7 +27,7 @@ async def create_placement(
     db: AsyncSession = Depends(get_db)
 ):
     """Record student placement data."""
-    user_id = UUID(current_user["id"]) if current_user else DEFAULT_USER_ID
+    user_id = UUID(current_user["id"]) if current_user else None
     new_placement = Placement(
         student_id=user_id,
         company=placement_in.company,
@@ -56,7 +56,7 @@ async def create_achievement(
     db: AsyncSession = Depends(get_db)
 ):
     """Record hackathon win or certification."""
-    user_id = UUID(current_user["id"]) if current_user else DEFAULT_USER_ID
+    user_id = UUID(current_user["id"]) if current_user else None
     new_ach = Achievement(
         student_id=user_id,
         category=achievement_in.category,
