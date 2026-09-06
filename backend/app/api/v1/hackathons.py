@@ -23,13 +23,13 @@ async def list_hackathons(
 async def get_hackathon(id: UUID, db: AsyncSession = Depends(get_db)):
     return await HackathonService.get_hackathon(db, id)
 
-@router.post("", response_model=HackathonResponse, status_code=status.HTTP_201_CREATED, summary="Post hackathon (Admin)")
+@router.post("", response_model=HackathonResponse, status_code=status.HTTP_201_CREATED, summary="Post hackathon")
 async def create_hackathon(
     h_in: HackathonCreate,
-    admin: dict = Depends(require_admin_user),
+    user: Optional[dict] = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db)
 ):
-    submitted_by = UUID(admin["id"]) if admin.get("id") else None
+    submitted_by = UUID(user["id"]) if user and user.get("id") else None
     return await HackathonService.create_hackathon(db, h_in, submitted_by=submitted_by)
 
 @router.put("/{id}", response_model=HackathonResponse, summary="Update hackathon (Admin)")

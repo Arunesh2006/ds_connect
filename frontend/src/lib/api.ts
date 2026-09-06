@@ -37,7 +37,20 @@ export async function createHackathon(data: HackathonCreate): Promise<Hackathon>
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error('Failed to create hackathon');
+  if (!res.ok) {
+    let errMsg = 'Failed to create hackathon';
+    try {
+      const errData = await res.json();
+      if (errData.detail) {
+        errMsg = Array.isArray(errData.detail)
+          ? errData.detail.map((e: any) => e.msg || JSON.stringify(e)).join(', ')
+          : String(errData.detail);
+      }
+    } catch {
+      // ignore json parse error
+    }
+    throw new Error(errMsg);
+  }
   return await res.json();
 }
 
