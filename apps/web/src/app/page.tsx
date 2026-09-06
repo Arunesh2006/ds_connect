@@ -34,12 +34,13 @@ export default async function Home() {
               Curated Events ↓
             </Link>
             <Link
-              href="/team-matching"
+              href="/members"
               className="bg-slate-900 hover:bg-slate-800 text-slate-200 text-sm font-semibold px-6 py-3 rounded-xl border border-slate-800 transition flex items-center gap-2"
             >
-              <Users className="w-4 h-4 text-purple-400" />
-              Team Matcher
+              <Users className="w-4 h-4 text-sky-400" />
+              Cohort Members
             </Link>
+
             <Link
               href="/projects"
               className="bg-slate-900 hover:bg-slate-800 text-slate-200 text-sm font-semibold px-6 py-3 rounded-xl border border-slate-800 transition flex items-center gap-2"

@@ -20,14 +20,11 @@ export default function Navbar() {
             <Calendar className="w-4 h-4 text-indigo-400" />
             Opportunities
           </Link>
-          <Link href="/team-matching" className="flex items-center gap-1.5 hover:text-white transition">
-            <Users className="w-4 h-4 text-purple-400" />
-            Team Matcher
-          </Link>
           <Link href="/projects" className="flex items-center gap-1.5 hover:text-white transition">
             <FolderGit2 className="w-4 h-4 text-amber-400" />
             Projects Showcase
           </Link>
+
           <Link href="/placements" className="flex items-center gap-1.5 hover:text-white transition">
             <Briefcase className="w-4 h-4 text-emerald-400" />
             Placements & Wins

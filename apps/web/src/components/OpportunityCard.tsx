@@ -1,16 +1,21 @@
+'use client';
+
+import { useState } from 'react';
 import { Opportunity } from '@/types/api';
-import { Calendar, MapPin, ExternalLink, Users, Tag } from 'lucide-react';
+import { Calendar, MapPin, Tag, Share2, Check, MessageCircle } from 'lucide-react';
 
 interface OpportunityCardProps {
   opportunity: Opportunity;
 }
 
 export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
+  const [copied, setCopied] = useState(false);
+
   const deadlineDate = new Date(opportunity.deadline);
   const formattedDeadline = deadlineDate.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
-    year: 'numeric'
+    year: 'numeric',
   });
 
   const typeColorMap: Record<string, string> = {
@@ -18,9 +23,41 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
     internship: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
     workshop: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
     event: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+    research: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
   };
 
   const badgeStyle = typeColorMap[opportunity.type] || 'bg-slate-500/10 text-slate-400 border-slate-500/20';
+
+  function handleShareWhatsApp() {
+    // Generate clean, formatted WhatsApp announcement text
+    const tagsFormatted = opportunity.tags && opportunity.tags.length > 0 
+      ? opportunity.tags.map(t => `#${t.replace(/\s+/g, '')}`).join(' ') 
+      : '#DataScience #Hackathon';
+
+    const message = `📢 *NEW DATA SCIENCE OPPORTUNITY!*\n\n` +
+      `🏆 *${opportunity.title.trim()}*\n` +
+      `🏢 *Organizer:* ${opportunity.organizer}\n` +
+      `🏷️ *Category:* ${opportunity.type.toUpperCase()}\n` +
+      `📅 *Deadline:* ${formattedDeadline}\n` +
+      `📍 *Location:* ${opportunity.location}\n` +
+      `🏷️ *Tags:* ${tagsFormatted}\n\n` +
+      `📝 *Overview:*\n${opportunity.description.trim()}\n\n` +
+      (opportunity.external_link ? `🔗 *Details / Apply:* ${opportunity.external_link}\n\n` : '') +
+      `━━━━━━━━━━━━━━━━━━━━━\n` +
+      `*DS-Connect Cohort Community*`;
+
+    // Copy to clipboard
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(message).catch(() => {});
+    }
+
+    setCopied(true);
+    setTimeout(() => setCopied(false), 3000);
+
+    // Open WhatsApp Web or Mobile app pre-filled with the message
+    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  }
 
   return (
     <div className="bg-slate-900/60 border border-slate-800 hover:border-indigo-500/50 rounded-xl p-6 transition flex flex-col justify-between hover:shadow-lg hover:shadow-indigo-500/5">
@@ -65,22 +102,23 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
           {opportunity.location}
         </span>
 
-        <div className="flex items-center gap-2">
-          <button className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-md transition flex items-center gap-1">
-            <Users className="w-3.5 h-3.5 text-indigo-400" />
-            Find Team
-          </button>
-          {opportunity.external_link && (
-            <a
-              href={opportunity.external_link}
-              target="_blank"
-              rel="noreferrer"
-              className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-md transition flex items-center gap-1 font-medium"
-            >
-              Apply <ExternalLink className="w-3 h-3" />
-            </a>
+        <button
+          onClick={handleShareWhatsApp}
+          title="Click to automatically create formatted announcement and post to WhatsApp Community"
+          className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-3.5 py-2 rounded-lg transition flex items-center gap-1.5 shadow-sm shadow-emerald-600/20 active:scale-95"
+        >
+          {copied ? (
+            <>
+              <Check className="w-3.5 h-3.5 text-white" />
+              <span>Copied & Opening WhatsApp!</span>
+            </>
+          ) : (
+            <>
+              <MessageCircle className="w-3.5 h-3.5 fill-white" />
+              <span>Post to WhatsApp</span>
+            </>
           )}
-        </div>
+        </button>
       </div>
     </div>
   );
