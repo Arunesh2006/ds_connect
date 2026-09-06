@@ -4,13 +4,27 @@ import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { Placement, Achievement } from '@/types/api';
 import { fetchPlacements, createPlacement, fetchAchievements, createAchievement } from '@/lib/api';
-import { Briefcase, Trophy, PlusCircle, CheckCircle2, ShieldCheck, X } from 'lucide-react';
+import {
+  Briefcase,
+  Trophy,
+  PlusCircle,
+  CheckCircle2,
+  ShieldCheck,
+  X,
+  MessageCircle,
+  Check,
+  Sparkles
+} from 'lucide-react';
 
 export default function PlacementsPage() {
   const [placements, setPlacements] = useState<Placement[]>([]);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [isPlacementModalOpen, setIsPlacementModalOpen] = useState(false);
   const [isAchievementModalOpen, setIsAchievementModalOpen] = useState(false);
+
+  // Copied states for WhatsApp share buttons
+  const [copiedPlacementId, setCopiedPlacementId] = useState<string | null>(null);
+  const [copiedAchievementId, setCopiedAchievementId] = useState<string | null>(null);
 
   // Placement form state
   const [company, setCompany] = useState('');
@@ -32,6 +46,53 @@ export default function PlacementsPage() {
     const [pList, aList] = await Promise.all([fetchPlacements(), fetchAchievements()]);
     setPlacements(pList);
     setAchievements(aList);
+  }
+
+  function handleSharePlacementWhatsApp(p: Placement) {
+    const packageText = p.package_lpa ? `💰 *Package (CTC):* ${p.package_lpa} LPA\n` : '';
+    const message = `🎉 *DATA SCIENCE COHORT PLACEMENT ALERT!* 🎉\n\n` +
+      `Congratulations on another verified placement win for our cohort!\n\n` +
+      `🏢 *Company:* ${p.company}\n` +
+      `💼 *Role:* ${p.role}\n` +
+      packageText +
+      `🎓 *Batch:* Class of ${p.placement_year}\n` +
+      `🛡️ *Verification:* Official & DPDP Consented\n\n` +
+      `Let's congratulate our fellow teammate on this milestone! 🚀🔥\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━━\n` +
+      `*DS-Connect Cohort Community*`;
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(message).catch(() => {});
+    }
+
+    setCopiedPlacementId(p.id);
+    setTimeout(() => setCopiedPlacementId(null), 3000);
+
+    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  }
+
+  function handleShareAchievementWhatsApp(ach: Achievement) {
+    const descText = ach.description ? `📝 *Overview:* ${ach.description}\n` : '';
+    const message = `🏆 *DATA SCIENCE COHORT WIN / ACHIEVEMENT!* 🏆\n\n` +
+      `Proud to announce an exciting achievement from our team:\n\n` +
+      `🥇 *${ach.title}*\n` +
+      `🏷️ *Category:* ${ach.category}\n` +
+      `📅 *Date:* ${ach.achievement_date}\n` +
+      descText + `\n` +
+      `Huge congratulations! Keep setting the bar high! 🌟🔥\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━━\n` +
+      `*DS-Connect Cohort Community*`;
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(message).catch(() => {});
+    }
+
+    setCopiedAchievementId(ach.id);
+    setTimeout(() => setCopiedAchievementId(null), 3000);
+
+    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
   }
 
   async function handlePlacementSubmit(e: React.FormEvent) {
@@ -77,7 +138,7 @@ export default function PlacementsPage() {
             Cohort Placements & Achievements
           </h1>
           <p className="text-slate-400 max-w-xl mx-auto text-sm sm:text-base">
-            Verified hiring outcomes, job offers, and competition wins. Regulated in accordance with the India DPDP Act 2023.
+            Verified hiring outcomes, job offers, and competition wins. Regulated in accordance with the India DPDP Act 2023 with 1-click WhatsApp Community broadcast.
           </p>
         </div>
       </section>
@@ -94,7 +155,7 @@ export default function PlacementsPage() {
             </div>
             <button
               onClick={() => setIsPlacementModalOpen(true)}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg transition flex items-center gap-2"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg transition flex items-center gap-2 cursor-pointer shadow-sm shadow-emerald-600/20 active:scale-95"
             >
               <PlusCircle className="w-4 h-4" />
               Record Placement
@@ -103,14 +164,14 @@ export default function PlacementsPage() {
 
           {placements.length === 0 ? (
             <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-8 text-center text-slate-400 text-sm">
-              No placement records logged yet.
+              No placement records logged yet. Click &quot;Record Placement&quot; above to add one.
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {placements.map((p) => (
                 <div
                   key={p.id}
-                  className="bg-slate-900/60 border border-slate-800 rounded-xl p-6 flex flex-col justify-between"
+                  className="bg-slate-900/60 border border-slate-800 hover:border-emerald-500/50 rounded-xl p-6 flex flex-col justify-between transition hover:shadow-lg hover:shadow-emerald-500/5"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-2">
@@ -124,13 +185,37 @@ export default function PlacementsPage() {
                     <h3 className="text-lg font-bold text-white">{p.company}</h3>
                     <p className="text-sm text-slate-300">{p.role}</p>
                   </div>
-                  <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between">
-                    <span className="text-xs text-slate-500 flex items-center gap-1">
-                      <ShieldCheck className="w-3.5 h-3.5 text-slate-400" /> DPDP Consented
-                    </span>
-                    {p.package_lpa && (
-                      <span className="text-sm font-bold text-emerald-400">{p.package_lpa} LPA</span>
-                    )}
+
+                  <div className="mt-5 pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] text-slate-500 flex items-center gap-1">
+                        <ShieldCheck className="w-3.5 h-3.5 text-slate-400" /> DPDP
+                      </span>
+                      {p.package_lpa && (
+                        <span className="text-xs font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-800/50 px-2 py-0.5 rounded">
+                          {p.package_lpa} LPA
+                        </span>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={() => handleSharePlacementWhatsApp(p)}
+                      title="Click to automatically create formatted announcement and post to WhatsApp Community"
+                      className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 shadow-sm shadow-emerald-600/20 active:scale-95 cursor-pointer shrink-0"
+                    >
+                      {copiedPlacementId === p.id ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-white" />
+                          <span className="hidden sm:inline">Copied & Opening!</span>
+                          <span className="sm:hidden">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <MessageCircle className="w-3.5 h-3.5 fill-white" />
+                          <span>Post to WhatsApp</span>
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
               ))}
@@ -149,7 +234,7 @@ export default function PlacementsPage() {
             </div>
             <button
               onClick={() => setIsAchievementModalOpen(true)}
-              className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg transition flex items-center gap-2"
+              className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg transition flex items-center gap-2 cursor-pointer shadow-sm active:scale-95"
             >
               <PlusCircle className="w-4 h-4 text-amber-400" />
               Add Achievement
@@ -158,17 +243,39 @@ export default function PlacementsPage() {
 
           {achievements.length === 0 ? (
             <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-8 text-center text-slate-400 text-sm">
-              No achievements logged yet.
+              No achievements logged yet. Click &quot;Add Achievement&quot; above to add one.
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {achievements.map((ach) => (
-                <div key={ach.id} className="bg-slate-900/60 border border-slate-800 rounded-xl p-5 flex items-start gap-4">
-                  <div className="p-2.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                <div
+                  key={ach.id}
+                  className="bg-slate-900/60 border border-slate-800 hover:border-amber-500/40 rounded-xl p-5 flex items-start gap-4 transition"
+                >
+                  <div className="p-2.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0 mt-0.5">
                     <Trophy className="w-5 h-5" />
                   </div>
-                  <div>
-                    <span className="text-xs text-amber-400 font-semibold uppercase">{ach.category}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="text-[11px] text-amber-400 font-bold uppercase tracking-wider">{ach.category}</span>
+                      <button
+                        onClick={() => handleShareAchievementWhatsApp(ach)}
+                        title="Click to format announcement and post to WhatsApp Community"
+                        className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-2.5 py-1 rounded-md transition flex items-center gap-1.5 shadow-sm shadow-emerald-600/20 active:scale-95 cursor-pointer shrink-0"
+                      >
+                        {copiedAchievementId === ach.id ? (
+                          <>
+                            <Check className="w-3 h-3 text-white" />
+                            <span>Copied!</span>
+                          </>
+                        ) : (
+                          <>
+                            <MessageCircle className="w-3 h-3 fill-white" />
+                            <span>Post to WhatsApp</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                     <h4 className="text-base font-bold text-white">{ach.title}</h4>
                     <p className="text-xs text-slate-500 mt-1">Awarded on {ach.achievement_date}</p>
                   </div>
@@ -185,7 +292,7 @@ export default function PlacementsPage() {
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl">
             <div className="flex items-center justify-between pb-4 border-b border-slate-800">
               <h3 className="text-lg font-bold text-white">Record Placement Offer</h3>
-              <button onClick={() => setIsPlacementModalOpen(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setIsPlacementModalOpen(false)} className="text-slate-400 hover:text-white cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -256,13 +363,13 @@ export default function PlacementsPage() {
                 <button
                   type="button"
                   onClick={() => setIsPlacementModalOpen(false)}
-                  className="px-4 py-2 text-sm text-slate-300 hover:text-white bg-slate-800 rounded-lg"
+                  className="px-4 py-2 text-sm text-slate-300 hover:text-white bg-slate-800 rounded-lg cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg"
+                  className="px-5 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg cursor-pointer shadow-sm"
                 >
                   Save Record
                 </button>
@@ -278,7 +385,7 @@ export default function PlacementsPage() {
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl">
             <div className="flex items-center justify-between pb-4 border-b border-slate-800">
               <h3 className="text-lg font-bold text-white">Add Hackathon Win / Certificate</h3>
-              <button onClick={() => setIsAchievementModalOpen(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setIsAchievementModalOpen(false)} className="text-slate-400 hover:text-white cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -325,13 +432,13 @@ export default function PlacementsPage() {
                 <button
                   type="button"
                   onClick={() => setIsAchievementModalOpen(false)}
-                  className="px-4 py-2 text-sm text-slate-300 hover:text-white bg-slate-800 rounded-lg"
+                  className="px-4 py-2 text-sm text-slate-300 hover:text-white bg-slate-800 rounded-lg cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 text-sm font-semibold text-white bg-amber-600 hover:bg-amber-500 rounded-lg"
+                  className="px-5 py-2 text-sm font-semibold text-white bg-amber-600 hover:bg-amber-500 rounded-lg cursor-pointer shadow-sm"
                 >
                   Save Achievement
                 </button>
