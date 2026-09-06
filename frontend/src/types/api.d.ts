@@ -1,71 +1,57 @@
-export interface Opportunity {
+export interface Hackathon {
   id: string;
   title: string;
-  description: string;
-  type: 'hackathon' | 'event' | 'internship' | 'research' | 'workshop';
-  status: string;
   organizer: string;
+  description: string;
   deadline: string;
   location: string;
   external_link: string | null;
   tags: string[];
-  submitted_by: string;
+  type?: string;
+  prize_pool: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  mode: string;
+  team_size: string;
+  status: string;
+  submitted_by: string | null;
   created_at: string;
   updated_at: string;
 }
 
-export interface OpportunityCreate {
+export type Opportunity = Hackathon;
+
+export interface HackathonCreate {
   title: string;
-  description: string;
-  type: string;
   organizer: string;
+  description: string;
   deadline: string;
-  location: string;
+  type?: string;
+  location?: string;
   external_link?: string;
   tags: string[];
-}
-
-export interface TeamRequest {
-  id: string;
-  opportunity_id: string;
-  requester_id: string;
-  title: string;
-  role_needed: string;
-  skills_required: string[];
-  max_members: number;
-  current_members_count: number;
-  status: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Project {
-  id: string;
-  title: string;
-  description: string | null;
-  technologies: string[];
-  repo_url: string | null;
-  live_url: string | null;
-  owner_id: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ProjectCreate {
-  title: string;
-  description?: string;
-  technologies: string[];
-  repo_url?: string;
-  live_url?: string;
+  prize_pool?: string;
+  start_date?: string;
+  end_date?: string;
+  mode?: string;
+  team_size?: string;
+  status?: string;
 }
 
 export interface Placement {
   id: string;
-  student_id: string;
+  student_id: string | null;
   company: string;
   role: string;
   package_lpa: number | null;
   placement_year: number;
+  eligibility: string | null;
+  skills: string[];
+  location: string;
+  application_deadline: string | null;
+  application_link: string | null;
+  description: string | null;
+  status: string;
   is_verified: boolean;
   consent_for_public_display: boolean;
   created_at: string;
@@ -75,13 +61,20 @@ export interface PlacementCreate {
   company: string;
   role: string;
   package_lpa?: number;
-  placement_year: number;
-  consent_for_public_display: boolean;
+  placement_year?: number;
+  eligibility?: string;
+  skills: string[];
+  location?: string;
+  application_deadline?: string;
+  application_link?: string;
+  description?: string;
+  status?: string;
+  consent_for_public_display?: boolean;
 }
 
 export interface Achievement {
   id: string;
-  student_id: string;
+  student_id: string | null;
   category: string;
   title: string;
   description: string | null;
@@ -98,31 +91,62 @@ export interface AchievementCreate {
   certificate_url?: string;
 }
 
-export interface Profile {
+export interface Project {
   id: string;
-  name: string;
-  email: string;
-  avatar_url: string | null;
-  college_year: number | null;
-  role: 'student' | 'faculty' | 'admin' | 'mentor' | 'alumni';
-  responsibility: string | null;
-  bio: string | null;
-  skills: string[];
-  github_handle: string | null;
-  linkedin_url: string | null;
+  title: string;
+  description: string | null;
+  technologies: string[];
+  repo_url: string | null;
+  live_url: string | null;
+  owner_id: string | null;
+  status: string;
   created_at: string;
   updated_at: string;
 }
 
-export interface ProfileCreate {
+export interface ProjectCreate {
+  title: string;
+  description?: string;
+  technologies: string[];
+  repo_url?: string;
+  live_url?: string;
+  status?: string;
+}
+
+export interface Member {
+  id: string;
   name: string;
   email: string;
-  role: 'student' | 'faculty';
+  role: 'student' | 'admin' | 'faculty';
+  college_year: number | null;
+  responsibility: string | null; // Working Section
+  bio: string | null;
+  skills: string[];
+  github_handle: string | null;
+  linkedin_url: string | null;
+  avatar_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MemberCreate {
+  name: string;
+  email: string;
+  role?: string;
   college_year?: number | null;
-  responsibility?: string;
+  responsibility: string; // Working Section
   bio?: string;
   skills?: string[];
   github_handle?: string;
   linkedin_url?: string;
-  avatar_url?: string;
+}
+
+export interface WhatsAppPublishResponse {
+  success: boolean;
+  status: string;
+  message: string;
+  formatted_text: string;
+  share_url: string;
+  destination: string | null;
+  details?: any;
 }

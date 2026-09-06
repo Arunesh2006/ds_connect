@@ -2,8 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
-import { Placement, Achievement } from '@/types/api';
-import { fetchPlacements, createPlacement, fetchAchievements, createAchievement } from '@/lib/api';
+import { Placement, Achievement, PlacementCreate, AchievementCreate } from '@/types/api';
+import {
+  fetchPlacements,
+  createPlacement,
+  fetchAchievements,
+  createAchievement,
+  publishWhatsApp
+} from '@/lib/api';
 import {
   Briefcase,
   Trophy,
@@ -13,102 +19,89 @@ import {
   X,
   MessageCircle,
   Check,
-  Sparkles
+  MapPin,
+  ExternalLink,
+  Search
 } from 'lucide-react';
 
 export default function PlacementsPage() {
   const [placements, setPlacements] = useState<Placement[]>([]);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  
+  // Modals & Details
   const [isPlacementModalOpen, setIsPlacementModalOpen] = useState(false);
   const [isAchievementModalOpen, setIsAchievementModalOpen] = useState(false);
+  const [selectedPlacement, setSelectedPlacement] = useState<Placement | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Copied states for WhatsApp share buttons
-  const [copiedPlacementId, setCopiedPlacementId] = useState<string | null>(null);
-  const [copiedAchievementId, setCopiedAchievementId] = useState<string | null>(null);
-
-  // Placement form state
+  // Forms
   const [company, setCompany] = useState('');
   const [role, setRole] = useState('');
   const [packageLpa, setPackageLpa] = useState('');
-  const [placementYear, setPlacementYear] = useState('2026');
-  const [consent, setConsent] = useState(true);
-
-  // Achievement form state
+  const [location, setLocation] = useState('Bangalore / Hybrid');
+  const [eligibility, setEligibility] = useState('');
+  const [skillsInput, setSkillsInput] = useState('');
+  const [applicationLink, setApplicationLink] = useState('');
+  const [description, setDescription] = useState('');
+  
+  // Achievement form
   const [achCategory, setAchCategory] = useState('Hackathon Win');
   const [achTitle, setAchTitle] = useState('');
   const [achDate, setAchDate] = useState('');
 
   useEffect(() => {
-    loadData();
-  }, []);
+    loadAll();
+  }, [search]);
 
-  async function loadData() {
-    const [pList, aList] = await Promise.all([fetchPlacements(), fetchAchievements()]);
+  async function loadAll() {
+    setLoading(true);
+    const [pList, aList] = await Promise.all([
+      fetchPlacements(search),
+      fetchAchievements()
+    ]);
     setPlacements(pList);
     setAchievements(aList);
+    setLoading(false);
   }
 
-  function handleSharePlacementWhatsApp(p: Placement) {
-    const packageText = p.package_lpa ? `💰 *Package (CTC):* ${p.package_lpa} LPA\n` : '';
-    const message = `🎉 *DATA SCIENCE COHORT PLACEMENT ALERT!* 🎉\n\n` +
-      `Congratulations on another verified placement win for our cohort!\n\n` +
-      `🏢 *Company:* ${p.company}\n` +
-      `💼 *Role:* ${p.role}\n` +
-      packageText +
-      `🎓 *Batch:* Class of ${p.placement_year}\n` +
-      `🛡️ *Verification:* Official & DPDP Consented\n\n` +
-      `Let's congratulate our fellow teammate on this milestone! 🚀🔥\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━━\n` +
-      `*DS-Connect Cohort Community*`;
-
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(message).catch(() => {});
+  async function handleSharePlacement(p: Placement) {
+    try {
+      const res = await publishWhatsApp('placement', p.id);
+      if (navigator.clipboard && res.formatted_text) {
+        await navigator.clipboard.writeText(res.formatted_text);
+      }
+      setCopiedId(p.id);
+      setTimeout(() => setCopiedId(null), 3000);
+      window.open(res.share_url, '_blank');
+    } catch (err) {
+      console.error('WhatsApp share error:', err);
     }
-
-    setCopiedPlacementId(p.id);
-    setTimeout(() => setCopiedPlacementId(null), 3000);
-
-    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
-  }
-
-  function handleShareAchievementWhatsApp(ach: Achievement) {
-    const descText = ach.description ? `📝 *Overview:* ${ach.description}\n` : '';
-    const message = `🏆 *DATA SCIENCE COHORT WIN / ACHIEVEMENT!* 🏆\n\n` +
-      `Proud to announce an exciting achievement from our team:\n\n` +
-      `🥇 *${ach.title}*\n` +
-      `🏷️ *Category:* ${ach.category}\n` +
-      `📅 *Date:* ${ach.achievement_date}\n` +
-      descText + `\n` +
-      `Huge congratulations! Keep setting the bar high! 🌟🔥\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━━\n` +
-      `*DS-Connect Cohort Community*`;
-
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(message).catch(() => {});
-    }
-
-    setCopiedAchievementId(ach.id);
-    setTimeout(() => setCopiedAchievementId(null), 3000);
-
-    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
   }
 
   async function handlePlacementSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const skills = skillsInput.split(',').map((s) => s.trim()).filter(Boolean);
     await createPlacement({
       company,
       role,
       package_lpa: packageLpa ? parseFloat(packageLpa) : undefined,
-      placement_year: parseInt(placementYear, 10),
-      consent_for_public_display: consent,
+      location,
+      eligibility,
+      skills,
+      application_link: applicationLink,
+      description,
+      placement_year: 2026,
+      status: 'active',
+      consent_for_public_display: true
     });
     setIsPlacementModalOpen(false);
     setCompany('');
     setRole('');
     setPackageLpa('');
-    await loadData();
+    setSkillsInput('');
+    await loadAll();
   }
 
   async function handleAchievementSubmit(e: React.FormEvent) {
@@ -121,101 +114,143 @@ export default function PlacementsPage() {
     setIsAchievementModalOpen(false);
     setAchTitle('');
     setAchDate('');
-    await loadData();
+    await loadAll();
   }
 
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col transition-colors">
       <Navbar />
 
-      <section className="py-14 px-4 sm:px-6 lg:px-8 border-b border-slate-800/60 bg-gradient-to-b from-emerald-950/20 to-transparent">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-700/50 text-emerald-300 text-xs font-semibold mb-4">
-            <Briefcase className="w-3.5 h-3.5 text-emerald-400" />
-            Career Records & Honors
+      <section className="py-12 px-4 sm:px-6 lg:px-8 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-b from-emerald-100/40 dark:from-emerald-950/20 to-transparent">
+        <div className="max-w-5xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-semibold mb-4">
+            <Briefcase className="w-3.5 h-3.5 text-emerald-500" />
+            Hiring Opportunities & Verified Offers
           </div>
-          <h1 className="text-3xl sm:text-5xl font-extrabold text-white mb-4">
-            Cohort Placements & Achievements
+          <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-3">
+            Placements & Careers
           </h1>
-          <p className="text-slate-400 max-w-xl mx-auto text-sm sm:text-base">
-            Verified hiring outcomes, job offers, and competition wins. Regulated in accordance with the India DPDP Act 2023 with 1-click WhatsApp Community broadcast.
+          <p className="text-slate-600 dark:text-slate-400 max-w-xl mx-auto text-sm sm:text-base">
+            Verified campus placements, intern hiring drives, and competition awards with 1-click WhatsApp community broadcast.
           </p>
         </div>
       </section>
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Placements Section */}
-        <div className="mb-14">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <Briefcase className="w-5 h-5 text-emerald-400" /> Verified Placements ({placements.length})
-              </h2>
-              <p className="text-xs text-slate-400">Offers accepted by students with explicit consent.</p>
-            </div>
-            <button
-              onClick={() => setIsPlacementModalOpen(true)}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg transition flex items-center gap-2 cursor-pointer shadow-sm shadow-emerald-600/20 active:scale-95"
-            >
-              <PlusCircle className="w-4 h-4" />
-              Record Placement
-            </button>
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full flex-1">
+        {/* Header bar */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-8">
+          <div className="relative w-full sm:w-72">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search company, job role, skills..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500"
+            />
           </div>
 
-          {placements.length === 0 ? (
-            <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-8 text-center text-slate-400 text-sm">
-              No placement records logged yet. Click &quot;Record Placement&quot; above to add one.
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsPlacementModalOpen(true)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition shadow-sm cursor-pointer"
+            >
+              <PlusCircle className="w-4 h-4" />
+              Post Placement Drive
+            </button>
+            <button
+              onClick={() => setIsAchievementModalOpen(true)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs transition cursor-pointer"
+            >
+              <Trophy className="w-4 h-4 text-amber-400" />
+              Add Win
+            </button>
+          </div>
+        </div>
+
+        {/* Placements Cards */}
+        <div className="mb-14">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+            <Briefcase className="w-5 h-5 text-emerald-500" /> Active Hiring Drives & Verified Placements
+          </h2>
+
+          {loading ? (
+            <div className="text-center py-16 text-slate-500 text-sm">Loading placements...</div>
+          ) : placements.length === 0 ? (
+            <div className="text-center py-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-500 text-sm">
+              No placement records found.
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {placements.map((p) => (
                 <div
                   key={p.id}
-                  className="bg-slate-900/60 border border-slate-800 hover:border-emerald-500/50 rounded-xl p-6 flex flex-col justify-between transition hover:shadow-lg hover:shadow-emerald-500/5"
+                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/50 rounded-2xl p-6 transition flex flex-col justify-between shadow-sm"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-semibold px-2.5 py-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400">
                         Class of {p.placement_year}
                       </span>
-                      <span className="text-xs text-slate-400 flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Verified
+                      <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> Verified
                       </span>
                     </div>
-                    <h3 className="text-lg font-bold text-white">{p.company}</h3>
-                    <p className="text-sm text-slate-300">{p.role}</p>
+
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">{p.company}</h3>
+                    <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 mt-0.5">{p.role}</p>
+
+                    <div className="flex items-center gap-2 text-xs text-slate-500 mt-2">
+                      <MapPin className="w-3.5 h-3.5" /> {p.location || 'Hybrid'}
+                    </div>
+
+                    {p.skills && p.skills.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-3">
+                        {p.skills.slice(0, 4).map((s) => (
+                          <span
+                            key={s}
+                            className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700"
+                          >
+                            {s}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
-                  <div className="mt-5 pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-slate-500 flex items-center gap-1">
-                        <ShieldCheck className="w-3.5 h-3.5 text-slate-400" /> DPDP
+                  <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                    {p.package_lpa ? (
+                      <span className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">
+                        {p.package_lpa} LPA
                       </span>
-                      {p.package_lpa && (
-                        <span className="text-xs font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-800/50 px-2 py-0.5 rounded">
-                          {p.package_lpa} LPA
-                        </span>
-                      )}
-                    </div>
+                    ) : (
+                      <span className="text-xs text-slate-400">Best in Class</span>
+                    )}
 
-                    <button
-                      onClick={() => handleSharePlacementWhatsApp(p)}
-                      title="Click to automatically create formatted announcement and post to WhatsApp Community"
-                      className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 shadow-sm shadow-emerald-600/20 active:scale-95 cursor-pointer shrink-0"
-                    >
-                      {copiedPlacementId === p.id ? (
-                        <>
-                          <Check className="w-3.5 h-3.5 text-white" />
-                          <span className="hidden sm:inline">Copied & Opening!</span>
-                          <span className="sm:hidden">Copied!</span>
-                        </>
-                      ) : (
-                        <>
-                          <MessageCircle className="w-3.5 h-3.5 fill-white" />
-                          <span>Post to WhatsApp</span>
-                        </>
-                      )}
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => setSelectedPlacement(p)}
+                        className="text-xs font-semibold text-sky-600 dark:text-sky-400 hover:underline px-2 py-1 cursor-pointer"
+                      >
+                        Details
+                      </button>
+                      <button
+                        onClick={() => handleSharePlacement(p)}
+                        className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-2.5 py-1.5 rounded-lg transition flex items-center gap-1 shadow-sm active:scale-95 cursor-pointer"
+                      >
+                        {copiedId === p.id ? (
+                          <>
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Opening!</span>
+                          </>
+                        ) : (
+                          <>
+                            <MessageCircle className="w-3.5 h-3.5 fill-white" />
+                            <span>Share</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -225,153 +260,193 @@ export default function PlacementsPage() {
 
         {/* Achievements Section */}
         <div>
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-amber-400" /> Hackathon Wins & Honors ({achievements.length})
-              </h2>
-              <p className="text-xs text-slate-400">Awards and certifications earned by the cohort.</p>
-            </div>
-            <button
-              onClick={() => setIsAchievementModalOpen(true)}
-              className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg transition flex items-center gap-2 cursor-pointer shadow-sm active:scale-95"
-            >
-              <PlusCircle className="w-4 h-4 text-amber-400" />
-              Add Achievement
-            </button>
-          </div>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+            <Trophy className="w-5 h-5 text-amber-500" /> Hackathon Wins & Awards ({achievements.length})
+          </h2>
 
-          {achievements.length === 0 ? (
-            <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-8 text-center text-slate-400 text-sm">
-              No achievements logged yet. Click &quot;Add Achievement&quot; above to add one.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {achievements.map((ach) => (
-                <div
-                  key={ach.id}
-                  className="bg-slate-900/60 border border-slate-800 hover:border-amber-500/40 rounded-xl p-5 flex items-start gap-4 transition"
-                >
-                  <div className="p-2.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0 mt-0.5">
-                    <Trophy className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <span className="text-[11px] text-amber-400 font-bold uppercase tracking-wider">{ach.category}</span>
-                      <button
-                        onClick={() => handleShareAchievementWhatsApp(ach)}
-                        title="Click to format announcement and post to WhatsApp Community"
-                        className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-2.5 py-1 rounded-md transition flex items-center gap-1.5 shadow-sm shadow-emerald-600/20 active:scale-95 cursor-pointer shrink-0"
-                      >
-                        {copiedAchievementId === ach.id ? (
-                          <>
-                            <Check className="w-3 h-3 text-white" />
-                            <span>Copied!</span>
-                          </>
-                        ) : (
-                          <>
-                            <MessageCircle className="w-3 h-3 fill-white" />
-                            <span>Post to WhatsApp</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                    <h4 className="text-base font-bold text-white">{ach.title}</h4>
-                    <p className="text-xs text-slate-500 mt-1">Awarded on {ach.achievement_date}</p>
-                  </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {achievements.map((ach) => (
+              <div
+                key={ach.id}
+                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex items-start gap-3.5 shadow-sm"
+              >
+                <div className="p-2.5 rounded-xl bg-amber-100 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800/60 shrink-0">
+                  <Trophy className="w-5 h-5" />
                 </div>
-              ))}
-            </div>
-          )}
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-amber-600 dark:text-amber-400 tracking-wider">
+                    {ach.category}
+                  </span>
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">{ach.title}</h4>
+                  <p className="text-xs text-slate-500 mt-1">Awarded: {ach.achievement_date}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* Record Placement Modal */}
-      {isPlacementModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-              <h3 className="text-lg font-bold text-white">Record Placement Offer</h3>
-              <button onClick={() => setIsPlacementModalOpen(false)} className="text-slate-400 hover:text-white cursor-pointer">
+      {/* Details Modal */}
+      {selectedPlacement && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">{selectedPlacement.company}</h3>
+              <button onClick={() => setSelectedPlacement(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
-
-            <form onSubmit={handlePlacementSubmit} className="mt-4 space-y-4">
+            <div className="py-4 space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Company *</label>
+                <span className="text-xs text-slate-500 block">Job Role</span>
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">{selectedPlacement.role}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <span className="text-xs text-slate-500 block">Package (CTC)</span>
+                  <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{selectedPlacement.package_lpa ? `${selectedPlacement.package_lpa} LPA` : 'Best in Class'}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-slate-500 block">Location</span>
+                  <p className="text-sm text-slate-900 dark:text-white">{selectedPlacement.location}</p>
+                </div>
+              </div>
+              {selectedPlacement.eligibility && (
+                <div>
+                  <span className="text-xs text-slate-500 block">Eligibility</span>
+                  <p className="text-xs text-slate-700 dark:text-slate-300">{selectedPlacement.eligibility}</p>
+                </div>
+              )}
+              {selectedPlacement.description && (
+                <div>
+                  <span className="text-xs text-slate-500 block">Description</span>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">{selectedPlacement.description}</p>
+                </div>
+              )}
+            </div>
+            <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-2">
+              {selectedPlacement.application_link && (
+                <a
+                  href={selectedPlacement.application_link}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs flex items-center gap-1.5"
+                >
+                  Apply Online <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              )}
+              <button
+                onClick={() => setSelectedPlacement(null)}
+                className="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Record Placement Modal */}
+      {isPlacementModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Post Placement / Hiring Opportunity</h3>
+              <button onClick={() => setIsPlacementModalOpen(false)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handlePlacementSubmit} className="mt-4 space-y-3 text-xs">
+              <div>
+                <label className="block font-semibold mb-1">Company Name *</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Microsoft, Google, Fractal Analytics"
+                  placeholder="e.g. Google, Microsoft, Fractal"
                   value={company}
                   onChange={(e) => setCompany(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500"
                 />
               </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Role *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Associate Data Scientist, ML Engineer"
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Package (CTC in LPA)</label>
+                  <label className="block font-semibold mb-1">Role *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. SWE Intern"
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold mb-1">Package (CTC in LPA)</label>
                   <input
                     type="number"
                     step="0.1"
-                    placeholder="e.g. 18.5"
+                    placeholder="e.g. 24.5"
                     value={packageLpa}
                     onChange={(e) => setPackageLpa(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold mb-1">Location</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Bangalore / Hybrid"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Batch Year *</label>
+                  <label className="block font-semibold mb-1">Application Link</label>
                   <input
-                    type="number"
-                    required
-                    value={placementYear}
-                    onChange={(e) => setPlacementYear(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+                    type="url"
+                    placeholder="https://..."
+                    value={applicationLink}
+                    onChange={(e) => setApplicationLink(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500"
                   />
                 </div>
               </div>
-
-              <div className="p-3 bg-slate-950 border border-slate-800 rounded-lg flex items-start gap-2.5">
+              <div>
+                <label className="block font-semibold mb-1">Skills (comma separated)</label>
                 <input
-                  type="checkbox"
-                  id="consent"
-                  checked={consent}
-                  onChange={(e) => setConsent(e.target.checked)}
-                  className="mt-0.5 rounded"
+                  type="text"
+                  placeholder="e.g. Python, PyTorch, SQL, React"
+                  value={skillsInput}
+                  onChange={(e) => setSkillsInput(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500"
                 />
-                <label htmlFor="consent" className="text-xs text-slate-400 leading-relaxed cursor-pointer">
-                  I grant explicit consent under India DPDP Act 2023 for my placement outcome to be displayed to the cohort directory.
-                </label>
               </div>
-
-              <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-800">
+              <div>
+                <label className="block font-semibold mb-1">Description / Eligibility</label>
+                <textarea
+                  rows={2}
+                  placeholder="Overview of hiring criteria, rounds, and requirements..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+              <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setIsPlacementModalOpen(false)}
-                  className="px-4 py-2 text-sm text-slate-300 hover:text-white bg-slate-800 rounded-lg cursor-pointer"
+                  className="px-4 py-2 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg cursor-pointer shadow-sm"
+                  className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold"
                 >
-                  Save Record
+                  Save Placement
                 </button>
               </div>
             </form>
@@ -381,64 +456,59 @@ export default function PlacementsPage() {
 
       {/* Record Achievement Modal */}
       {isAchievementModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-              <h3 className="text-lg font-bold text-white">Add Hackathon Win / Certificate</h3>
-              <button onClick={() => setIsAchievementModalOpen(false)} className="text-slate-400 hover:text-white cursor-pointer">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl text-xs">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Record Hackathon Win</h3>
+              <button onClick={() => setIsAchievementModalOpen(false)} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
-
-            <form onSubmit={handleAchievementSubmit} className="mt-4 space-y-4">
+            <form onSubmit={handleAchievementSubmit} className="mt-4 space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Category *</label>
+                <label className="block font-semibold mb-1">Category</label>
                 <select
                   value={achCategory}
                   onChange={(e) => setAchCategory(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 focus:outline-none"
                 >
-                  <option value="Hackathon Win">Hackathon Win (1st / 2nd / 3rd)</option>
-                  <option value="Certification">Industry Certification (AWS / TF / GCP)</option>
-                  <option value="Paper Publication">Research Paper Accepted</option>
-                  <option value="Open Source">Major Open Source Contribution</option>
+                  <option value="Hackathon Win">Hackathon Win</option>
+                  <option value="Certification">Industry Certification</option>
+                  <option value="Paper Publication">Research Publication</option>
                 </select>
               </div>
-
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Title *</label>
+                <label className="block font-semibold mb-1">Title *</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. 1st Place at Smart India Hackathon"
+                  placeholder="e.g. 1st Place - Smart India Hackathon"
                   value={achTitle}
                   onChange={(e) => setAchTitle(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 focus:outline-none"
                 />
               </div>
-
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Date *</label>
+                <label className="block font-semibold mb-1">Date *</label>
                 <input
                   type="date"
                   required
                   value={achDate}
                   onChange={(e) => setAchDate(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 focus:outline-none"
                 />
               </div>
-
-              <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-800">
+              <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setIsAchievementModalOpen(false)}
-                  className="px-4 py-2 text-sm text-slate-300 hover:text-white bg-slate-800 rounded-lg cursor-pointer"
+                  className="px-4 py-2 text-slate-500 hover:text-slate-900 dark:hover:text-white"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 text-sm font-semibold text-white bg-amber-600 hover:bg-amber-500 rounded-lg cursor-pointer shadow-sm"
+                  className="px-5 py-2 bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded-lg"
                 >
                   Save Achievement
                 </button>

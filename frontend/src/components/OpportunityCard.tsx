@@ -26,7 +26,8 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
     research: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
   };
 
-  const badgeStyle = typeColorMap[opportunity.type] || 'bg-slate-500/10 text-slate-400 border-slate-500/20';
+  const oppType = opportunity.type || opportunity.mode || 'hackathon';
+  const badgeStyle = typeColorMap[oppType.toLowerCase()] || 'bg-slate-500/10 text-slate-400 border-slate-500/20';
 
   function handleShareWhatsApp() {
     // Generate clean, formatted WhatsApp announcement text
@@ -37,7 +38,7 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
     const message = `📢 *NEW DATA SCIENCE OPPORTUNITY!*\n\n` +
       `🏆 *${opportunity.title.trim()}*\n` +
       `🏢 *Organizer:* ${opportunity.organizer}\n` +
-      `🏷️ *Category:* ${opportunity.type.toUpperCase()}\n` +
+      `🏷️ *Category:* ${oppType.toUpperCase()}\n` +
       `📅 *Deadline:* ${formattedDeadline}\n` +
       `📍 *Location:* ${opportunity.location}\n` +
       `🏷️ *Tags:* ${tagsFormatted}\n\n` +

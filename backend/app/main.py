@@ -5,29 +5,29 @@ from app.api.v1.router import api_router
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
+    version="2.0.0",
+    description="DS-Connect Production Full-Stack Portal API - Placements, Hackathons, Projects, Members & WhatsApp Integration",
     openapi_url=f"{settings.API_V1_PREFIX}/openapi.json",
     docs_url="/docs",
-    redoc_url="/redoc",
+    redoc_url="/redoc"
 )
 
-# CORS Middleware configuration
+# Enable CORS for Next.js frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Mount API Routers
 app.include_router(api_router, prefix=settings.API_V1_PREFIX)
 
-@app.get("/")
-def root():
+@app.get("/", tags=["Root"])
+async def root():
     return {
-        "message": "Welcome to DS-Connect API",
-        "docs": "/docs",
-        "version": "1.0.0"
+        "project": settings.PROJECT_NAME,
+        "version": "2.0.0",
+        "documentation": "/docs",
+        "api_prefix": settings.API_V1_PREFIX
     }
-
-# reload trigger

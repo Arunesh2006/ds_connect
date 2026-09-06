@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from sqlalchemy import Column, String, Text, DateTime, ARRAY
 from sqlalchemy.dialects.postgresql import UUID, ENUM
-from app.db.session import Base
+from app.database.session import Base
 
 opportunity_type_enum = ENUM(
     'hackathon', 'event', 'internship', 'research', 'workshop',
@@ -31,6 +31,10 @@ class Opportunity(Base):
     external_link = Column(String, nullable=True)
     tags = Column(ARRAY(String), default=list, nullable=False)
     submitted_by = Column(UUID(as_uuid=True), nullable=True)
+    prize_pool = Column(String, nullable=True)
+    start_date = Column(DateTime(timezone=True), nullable=True)
+    end_date = Column(DateTime(timezone=True), nullable=True)
+    mode = Column(String, default="Online", nullable=False)
+    team_size = Column(String, default="1-4", nullable=False)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
-

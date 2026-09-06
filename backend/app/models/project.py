@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from sqlalchemy import Column, String, Text, DateTime, ARRAY, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
-from app.db.session import Base
+from app.database.session import Base
 
 class Project(Base):
     __tablename__ = "projects"
@@ -15,6 +15,7 @@ class Project(Base):
     repo_url = Column(String, nullable=True)
     live_url = Column(String, nullable=True)
     owner_id = Column(UUID(as_uuid=True), nullable=True)
+    status = Column(String, default="approved", nullable=False)  # pending, approved, rejected
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 

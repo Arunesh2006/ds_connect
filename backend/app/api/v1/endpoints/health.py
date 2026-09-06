@@ -6,7 +6,7 @@ from app.core.config import settings
 
 router = APIRouter()
 
-@router.get("/health", tags=["Health"])
+@router.get("", tags=["Health"])
 async def health_check(db: AsyncSession = Depends(get_db)):
     """System liveness and database connectivity probe."""
     db_status = "healthy"

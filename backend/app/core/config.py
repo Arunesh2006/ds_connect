@@ -17,6 +17,13 @@ class Settings(BaseSettings):
     
     # Database Connection (Async SQLAlchemy)
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:54322/postgres"
+    SUPABASE_SERVICE_ROLE_KEY: str = ""
+    
+    # WhatsApp Meta Cloud API Configuration
+    WHATSAPP_ACCESS_TOKEN: str = ""
+    WHATSAPP_PHONE_NUMBER_ID: str = ""
+    WHATSAPP_BUSINESS_ACCOUNT_ID: str = ""
+    WHATSAPP_DESTINATION_ID: str = ""
     
     model_config = SettingsConfigDict(
         env_file=".env",
