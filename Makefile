@@ -11,4 +11,4 @@ dev:
 	@echo "Redis running on :6379. Ready to start API and Web apps."
 
 generate-types:
-	cmd.exe /c "npx openapi-typescript http://localhost:8000/openapi.json -o apps/web/src/types/api.d.ts"
+	cmd.exe /c "npx openapi-typescript http://localhost:8000/openapi.json -o frontend/src/types/api.d.ts"

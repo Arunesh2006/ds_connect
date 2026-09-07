@@ -36,6 +36,7 @@ frontend/out/
 dist/
 build/
 *.egg-info/
+*.tsbuildinfo
 
 # Logs
 npm-debug.log*
