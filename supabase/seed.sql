@@ -138,7 +138,84 @@ begin
     )
     on conflict (id) do nothing;
 
-    -- 5. User Consents (DPDP Act Sample Audit)
+    -- 5. Sample Placements & Hiring Drives
+    insert into public.placements (id, student_id, company, role, package_lpa, placement_year, eligibility, skills, location, application_deadline, application_link, description, status, is_verified, consent_for_public_display)
+    values
+    (
+        '44444444-4444-4444-4444-444444444441',
+        null,
+        'Amazon AWS',
+        'Applied Data Scientist - GenAI',
+        34.50,
+        2026,
+        'B.Tech / M.Tech DS & AI, CGPA >= 7.5',
+        array['Python', 'PyTorch', 'AWS SageMaker', 'Transformers', 'Distributed Training'],
+        'Bangalore / Hybrid',
+        now() + interval '25 days',
+        'https://amazon.jobs',
+        'Full-time campus drive for LLM fine-tuning and retrieval-augmented generation systems.',
+        'active',
+        true,
+        true
+    ),
+    (
+        '44444444-4444-4444-4444-444444444442',
+        null,
+        'Google Cloud',
+        'Data Engineer & Systems Associate',
+        38.00,
+        2026,
+        'B.Tech Pre-Final & Final Year, Strong DSA & SQL',
+        array['SQL', 'BigQuery', 'Apache Spark', 'Python', 'Kafka'],
+        'Hyderabad / Remote',
+        now() + interval '35 days',
+        'https://careers.google.com',
+        'Infrastructure and petabyte-scale streaming analytics engineering role.',
+        'active',
+        true,
+        true
+    ),
+    (
+        '44444444-4444-4444-4444-444444444443',
+        student1_id,
+        'Microsoft IDC',
+        'Research Engineer Intern',
+        28.00,
+        2026,
+        'Past Published Research or Open Source Portfolio',
+        array['C++', 'Python', 'ONNX Runtime', 'Deep Learning'],
+        'Noida / Hybrid',
+        now() + interval '15 days',
+        'https://careers.microsoft.com',
+        'Verified student placement offer for Aarav Sharma.',
+        'active',
+        true,
+        true
+    )
+    on conflict (id) do nothing;
+
+    -- 6. Sample Achievements
+    insert into public.achievements (student_id, category, title, description, achievement_date, certificate_url)
+    values
+    (
+        student1_id,
+        'Hackathon Win',
+        '1st Place — National AI Hackathon 2026',
+        'Built real-time audio deepfake detector on edge hardware.',
+        current_date - interval '10 days',
+        'https://certificates.example.com/ai-hack-win'
+    ),
+    (
+        student2_id,
+        'Certification',
+        'Google Professional Data Engineer',
+        'Certified cloud data architect with BigQuery, Dataproc, and Pub/Sub mastery.',
+        current_date - interval '30 days',
+        'https://certificates.example.com/gcp-data-eng'
+    )
+    on conflict do nothing;
+
+    -- 7. User Consents (DPDP Act Sample Audit)
     insert into public.user_consents (user_id, purpose, status, policy_version, ip_address)
     values
     (

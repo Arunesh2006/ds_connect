@@ -15,9 +15,11 @@ async def list_projects(
     search: Optional[str] = Query(None, description="Search by title or description"),
     technology: Optional[str] = Query(None, description="Filter by technology tag"),
     status: Optional[str] = Query("approved", description="Filter by status"),
+    limit: int = Query(50, ge=1, le=100, description="Items per page"),
+    offset: int = Query(0, ge=0, description="Page offset"),
     db: AsyncSession = Depends(get_db)
 ):
-    return await ProjectService.list_projects(db, search=search, technology=technology, status=status)
+    return await ProjectService.list_projects(db, search=search, technology=technology, status=status, limit=limit, offset=offset)
 
 @router.get("/admin/all", response_model=List[ProjectResponse], summary="List all projects for admin review")
 async def list_all_projects_admin(

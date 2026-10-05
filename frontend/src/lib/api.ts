@@ -12,17 +12,44 @@ import {
   WhatsAppPublishResponse
 } from '@/types/api';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  'http://localhost:8000';
+
+function getAuthHeaders(): HeadersInit {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (typeof window !== 'undefined') {
+    const role = localStorage.getItem('ds_user_role') || 'admin';
+    headers['X-User-Role'] = role;
+    const token = localStorage.getItem('ds_auth_token');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+  }
+  return headers;
+}
 
 // =================== HACKATHONS ===================
-export async function fetchHackathons(search?: string, mode?: string, status?: string): Promise<Hackathon[]> {
+export async function fetchHackathons(
+  search?: string,
+  mode?: string,
+  status?: string,
+  limit: number = 50,
+  offset: number = 0
+): Promise<Hackathon[]> {
   try {
     const params = new URLSearchParams();
     if (search) params.append('search', search);
     if (mode && mode !== 'all') params.append('mode', mode);
     if (status && status !== 'all') params.append('status', status);
+    params.append('limit', limit.toString());
+    params.append('offset', offset.toString());
 
-    const res = await fetch(`${API_BASE}/api/v1/hackathons?${params.toString()}`, { cache: 'no-store' });
+    const res = await fetch(`${API_BASE}/api/v1/hackathons?${params.toString()}`, {
+      cache: 'no-store',
+      headers: getAuthHeaders(),
+    });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   } catch (err) {
@@ -34,7 +61,7 @@ export async function fetchHackathons(search?: string, mode?: string, status?: s
 export async function createHackathon(data: HackathonCreate): Promise<Hackathon> {
   const res = await fetch(`${API_BASE}/api/v1/hackathons`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
   if (!res.ok) {
@@ -57,7 +84,7 @@ export async function createHackathon(data: HackathonCreate): Promise<Hackathon>
 export async function updateHackathon(id: string, data: Partial<HackathonCreate>): Promise<Hackathon> {
   const res = await fetch(`${API_BASE}/api/v1/hackathons/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error('Failed to update hackathon');
@@ -65,22 +92,46 @@ export async function updateHackathon(id: string, data: Partial<HackathonCreate>
 }
 
 export async function deleteHackathon(id: string): Promise<boolean> {
-  const res = await fetch(`${API_BASE}/api/v1/hackathons/${id}`, { method: 'DELETE' });
+  const res = await fetch(`${API_BASE}/api/v1/hackathons/${id}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
   return res.ok;
+}
+
+export async function triggerDiscovery(urls?: string[]): Promise<any> {
+  const res = await fetch(`${API_BASE}/api/v1/hackathons/discover`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(urls || null),
+  });
+  if (!res.ok) throw new Error('Failed to run autonomous opportunity discovery');
+  return await res.json();
 }
 
 export const fetchOpportunities = fetchHackathons;
 export const createOpportunity = createHackathon;
 
 // =================== PLACEMENTS ===================
-export async function fetchPlacements(search?: string, location?: string, status?: string): Promise<Placement[]> {
+export async function fetchPlacements(
+  search?: string,
+  location?: string,
+  status?: string,
+  limit: number = 50,
+  offset: number = 0
+): Promise<Placement[]> {
   try {
     const params = new URLSearchParams();
     if (search) params.append('search', search);
     if (location && location !== 'all') params.append('location', location);
     if (status && status !== 'all') params.append('status', status);
+    params.append('limit', limit.toString());
+    params.append('offset', offset.toString());
 
-    const res = await fetch(`${API_BASE}/api/v1/placements?${params.toString()}`, { cache: 'no-store' });
+    const res = await fetch(`${API_BASE}/api/v1/placements?${params.toString()}`, {
+      cache: 'no-store',
+      headers: getAuthHeaders(),
+    });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   } catch (err) {
@@ -92,7 +143,7 @@ export async function fetchPlacements(search?: string, location?: string, status
 export async function createPlacement(data: PlacementCreate): Promise<Placement> {
   const res = await fetch(`${API_BASE}/api/v1/placements`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error('Failed to create placement');
@@ -102,7 +153,7 @@ export async function createPlacement(data: PlacementCreate): Promise<Placement>
 export async function updatePlacement(id: string, data: Partial<PlacementCreate>): Promise<Placement> {
   const res = await fetch(`${API_BASE}/api/v1/placements/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error('Failed to update placement');
@@ -110,13 +161,19 @@ export async function updatePlacement(id: string, data: Partial<PlacementCreate>
 }
 
 export async function deletePlacement(id: string): Promise<boolean> {
-  const res = await fetch(`${API_BASE}/api/v1/placements/${id}`, { method: 'DELETE' });
+  const res = await fetch(`${API_BASE}/api/v1/placements/${id}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
   return res.ok;
 }
 
 export async function fetchAchievements(): Promise<Achievement[]> {
   try {
-    const res = await fetch(`${API_BASE}/api/v1/placements/achievements`, { cache: 'no-store' });
+    const res = await fetch(`${API_BASE}/api/v1/placements/achievements`, {
+      cache: 'no-store',
+      headers: getAuthHeaders(),
+    });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   } catch (err) {
@@ -128,7 +185,7 @@ export async function fetchAchievements(): Promise<Achievement[]> {
 export async function createAchievement(data: AchievementCreate): Promise<Achievement> {
   const res = await fetch(`${API_BASE}/api/v1/placements/achievements`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error('Failed to record achievement');
@@ -136,14 +193,25 @@ export async function createAchievement(data: AchievementCreate): Promise<Achiev
 }
 
 // =================== PROJECTS ===================
-export async function fetchProjects(search?: string, technology?: string, status?: string): Promise<Project[]> {
+export async function fetchProjects(
+  search?: string,
+  technology?: string,
+  status?: string,
+  limit: number = 50,
+  offset: number = 0
+): Promise<Project[]> {
   try {
     const params = new URLSearchParams();
     if (search) params.append('search', search);
     if (technology && technology !== 'all') params.append('technology', technology);
     if (status && status !== 'all') params.append('status', status);
+    params.append('limit', limit.toString());
+    params.append('offset', offset.toString());
 
-    const res = await fetch(`${API_BASE}/api/v1/projects?${params.toString()}`, { cache: 'no-store' });
+    const res = await fetch(`${API_BASE}/api/v1/projects?${params.toString()}`, {
+      cache: 'no-store',
+      headers: getAuthHeaders(),
+    });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   } catch (err) {
@@ -154,7 +222,10 @@ export async function fetchProjects(search?: string, technology?: string, status
 
 export async function fetchAllProjectsAdmin(): Promise<Project[]> {
   try {
-    const res = await fetch(`${API_BASE}/api/v1/projects/admin/all`, { cache: 'no-store' });
+    const res = await fetch(`${API_BASE}/api/v1/projects/admin/all`, {
+      cache: 'no-store',
+      headers: getAuthHeaders(),
+    });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   } catch (err) {
@@ -166,7 +237,7 @@ export async function fetchAllProjectsAdmin(): Promise<Project[]> {
 export async function createProject(data: ProjectCreate): Promise<Project> {
   const res = await fetch(`${API_BASE}/api/v1/projects`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error('Failed to submit project');
@@ -176,7 +247,7 @@ export async function createProject(data: ProjectCreate): Promise<Project> {
 export async function updateProject(id: string, data: Partial<ProjectCreate>): Promise<Project> {
   const res = await fetch(`${API_BASE}/api/v1/projects/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error('Failed to update project');
@@ -184,19 +255,33 @@ export async function updateProject(id: string, data: Partial<ProjectCreate>): P
 }
 
 export async function deleteProject(id: string): Promise<boolean> {
-  const res = await fetch(`${API_BASE}/api/v1/projects/${id}`, { method: 'DELETE' });
+  const res = await fetch(`${API_BASE}/api/v1/projects/${id}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
   return res.ok;
 }
 
 // =================== MEMBERS ===================
-export async function fetchMembers(search?: string, section?: string, year?: number): Promise<Member[]> {
+export async function fetchMembers(
+  search?: string,
+  section?: string,
+  year?: number,
+  limit: number = 50,
+  offset: number = 0
+): Promise<Member[]> {
   try {
     const params = new URLSearchParams();
     if (search) params.append('search', search);
     if (section && section !== 'all') params.append('section', section);
     if (year) params.append('year', year.toString());
+    params.append('limit', limit.toString());
+    params.append('offset', offset.toString());
 
-    const res = await fetch(`${API_BASE}/api/v1/members?${params.toString()}`, { cache: 'no-store' });
+    const res = await fetch(`${API_BASE}/api/v1/members?${params.toString()}`, {
+      cache: 'no-store',
+      headers: getAuthHeaders(),
+    });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   } catch (err) {
@@ -208,7 +293,7 @@ export async function fetchMembers(search?: string, section?: string, year?: num
 export async function createMember(data: MemberCreate): Promise<Member> {
   const res = await fetch(`${API_BASE}/api/v1/members`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
   if (!res.ok) {
@@ -221,7 +306,7 @@ export async function createMember(data: MemberCreate): Promise<Member> {
 export async function updateMember(id: string, data: Partial<MemberCreate>): Promise<Member> {
   const res = await fetch(`${API_BASE}/api/v1/members/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error('Failed to update member');
@@ -229,15 +314,22 @@ export async function updateMember(id: string, data: Partial<MemberCreate>): Pro
 }
 
 export async function deleteMember(id: string): Promise<boolean> {
-  const res = await fetch(`${API_BASE}/api/v1/members/${id}`, { method: 'DELETE' });
+  const res = await fetch(`${API_BASE}/api/v1/members/${id}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
   return res.ok;
 }
 
 // =================== WHATSAPP ===================
-export async function publishWhatsApp(contentType: string, id?: string, customMessage?: string): Promise<WhatsAppPublishResponse> {
+export async function publishWhatsApp(
+  contentType: string,
+  id?: string,
+  customMessage?: string
+): Promise<WhatsAppPublishResponse> {
   const res = await fetch(`${API_BASE}/api/v1/whatsapp/publish`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify({ content_type: contentType, id, custom_message: customMessage }),
   });
   if (!res.ok) throw new Error('Failed to generate WhatsApp publication');
@@ -247,7 +339,10 @@ export async function publishWhatsApp(contentType: string, id?: string, customMe
 // =================== AUTH & PROFILE ===================
 export async function checkUserRole(): Promise<{ is_admin: boolean; role: string }> {
   try {
-    const res = await fetch(`${API_BASE}/api/v1/auth/role-check`, { cache: 'no-store' });
+    const res = await fetch(`${API_BASE}/api/v1/auth/role-check`, {
+      cache: 'no-store',
+      headers: getAuthHeaders(),
+    });
     if (!res.ok) return { is_admin: false, role: 'student' };
     return await res.json();
   } catch {
@@ -257,7 +352,10 @@ export async function checkUserRole(): Promise<{ is_admin: boolean; role: string
 
 export async function fetchMyProfile(): Promise<Member | null> {
   try {
-    const res = await fetch(`${API_BASE}/api/v1/auth/me`, { cache: 'no-store' });
+    const res = await fetch(`${API_BASE}/api/v1/auth/me`, {
+      cache: 'no-store',
+      headers: getAuthHeaders(),
+    });
     if (!res.ok) return null;
     return await res.json();
   } catch {

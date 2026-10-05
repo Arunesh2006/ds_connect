@@ -9,7 +9,14 @@ from app.schemas.placement import PlacementCreate, PlacementUpdate, AchievementC
 
 class PlacementService:
     @staticmethod
-    async def list_placements(db: AsyncSession, search: Optional[str] = None, location: Optional[str] = None, status: Optional[str] = None) -> List[Placement]:
+    async def list_placements(
+        db: AsyncSession,
+        search: Optional[str] = None,
+        location: Optional[str] = None,
+        status: Optional[str] = None,
+        limit: int = 50,
+        offset: int = 0
+    ) -> List[Placement]:
         query = select(Placement)
         if search:
             query = query.where(Placement.company.ilike(f"%{search}%") | Placement.role.ilike(f"%{search}%"))
@@ -18,7 +25,7 @@ class PlacementService:
         if status:
             query = query.where(Placement.status == status)
 
-        query = query.order_by(Placement.created_at.desc())
+        query = query.order_by(Placement.created_at.desc()).limit(limit).offset(offset)
         res = await db.execute(query)
         return res.scalars().all()
 

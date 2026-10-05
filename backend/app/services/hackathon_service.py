@@ -9,7 +9,14 @@ from app.schemas.hackathon import HackathonCreate, HackathonUpdate
 
 class HackathonService:
     @staticmethod
-    async def list_hackathons(db: AsyncSession, search: Optional[str] = None, mode: Optional[str] = None, status: Optional[str] = None) -> List[Opportunity]:
+    async def list_hackathons(
+        db: AsyncSession,
+        search: Optional[str] = None,
+        mode: Optional[str] = None,
+        status: Optional[str] = None,
+        limit: int = 50,
+        offset: int = 0
+    ) -> List[Opportunity]:
         query = select(Opportunity).where(Opportunity.type == "hackathon")
         if search:
             query = query.where(Opportunity.title.ilike(f"%{search}%") | Opportunity.organizer.ilike(f"%{search}%"))
@@ -18,7 +25,7 @@ class HackathonService:
         if status and status != "all":
             query = query.where(Opportunity.status == status)
 
-        query = query.order_by(Opportunity.deadline.asc())
+        query = query.order_by(Opportunity.deadline.asc()).limit(limit).offset(offset)
         res = await db.execute(query)
         return res.scalars().all()
 

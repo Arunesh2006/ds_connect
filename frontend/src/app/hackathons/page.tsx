@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import AddHackathonModal from '@/components/AddHackathonModal';
 import { Hackathon } from '@/types/api';
-import { fetchHackathons, publishWhatsApp } from '@/lib/api';
+import { fetchHackathons, publishWhatsApp, triggerDiscovery } from '@/lib/api';
 import {
   Trophy,
   Calendar,
@@ -17,12 +17,15 @@ import {
   Users,
   PlusCircle,
   Sparkles,
-  AlertCircle
+  AlertCircle,
+  Globe,
+  Loader2
 } from 'lucide-react';
 
 export default function HackathonsPage() {
   const [hackathons, setHackathons] = useState<Hackathon[]>([]);
   const [loading, setLoading] = useState(true);
+  const [discovering, setDiscovering] = useState(false);
   const [search, setSearch] = useState('');
   const [modeFilter, setModeFilter] = useState('all');
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -38,6 +41,21 @@ export default function HackathonsPage() {
     const data = await fetchHackathons(search, modeFilter);
     setHackathons(data);
     setLoading(false);
+  }
+
+  async function handleAutoDiscover() {
+    try {
+      setDiscovering(true);
+      const res = await triggerDiscovery();
+      await loadHackathons();
+      setToastMessage(`Discovered ${res.total_fetched || 0} events! ${res.new_opportunities_added || 0} new added, ${res.duplicates_skipped || 0} duplicates skipped.`);
+      setTimeout(() => setToastMessage(null), 6000);
+    } catch (err: any) {
+      setToastMessage(err.message || 'Auto-discovery encountered an issue.');
+      setTimeout(() => setToastMessage(null), 4000);
+    } finally {
+      setDiscovering(false);
+    }
   }
 
   function handleSuccess() {
@@ -86,14 +104,31 @@ export default function HackathonsPage() {
             Curated machine learning competitions, Kaggle olympiads, and university hackathons with 1-click WhatsApp community broadcast.
           </p>
 
-          {/* Primary Action Button */}
-          <div className="flex items-center justify-center gap-3">
+          {/* Primary Action Buttons */}
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <button
+              onClick={handleAutoDiscover}
+              disabled={discovering}
+              className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white text-xs sm:text-sm font-bold px-5 py-2.5 rounded-2xl transition shadow-lg shadow-indigo-600/25 active:scale-95 cursor-pointer"
+            >
+              {discovering ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-white" />
+                  <span>Crawling & Discovering Events...</span>
+                </>
+              ) : (
+                <>
+                  <Globe className="w-4 h-4 text-indigo-200" />
+                  <span>🤖 Auto-Discover & Crawl Web</span>
+                </>
+              )}
+            </button>
             <button
               onClick={() => setIsModalOpen(true)}
               className="inline-flex items-center gap-2 bg-sky-600 hover:bg-sky-500 text-white text-xs sm:text-sm font-bold px-5 py-2.5 rounded-2xl transition shadow-lg shadow-sky-600/25 active:scale-95 cursor-pointer"
             >
               <PlusCircle className="w-4 h-4" />
-              <span>+ Add Hackathon Manually</span>
+              <span>+ Add Manually</span>
             </button>
           </div>
         </div>

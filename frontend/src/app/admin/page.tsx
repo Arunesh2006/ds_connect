@@ -24,7 +24,8 @@ import {
   fetchMembers,
   createMember,
   deleteMember,
-  publishWhatsApp
+  publishWhatsApp,
+  triggerDiscovery
 } from '@/lib/api';
 import {
   ShieldAlert,
@@ -39,7 +40,9 @@ import {
   MessageCircle,
   Check,
   Sparkles,
-  ExternalLink
+  ExternalLink,
+  Globe,
+  Loader2
 } from 'lucide-react';
 
 export default function AdminDashboardPage() {
@@ -51,6 +54,8 @@ export default function AdminDashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
+  const [discovering, setDiscovering] = useState(false);
+  const [crawlNotice, setCrawlNotice] = useState<string | null>(null);
 
   // WhatsApp form
   const [waText, setWaText] = useState('');
@@ -113,6 +118,22 @@ export default function AdminDashboardPage() {
     if (!confirm('Delete this hackathon?')) return;
     await deleteHackathon(id);
     setHackathons((prev) => prev.filter((h) => h.id !== id));
+  }
+
+  async function handleTriggerCrawler() {
+    try {
+      setDiscovering(true);
+      setCrawlNotice('Autonomous crawler active: searching Kaggle, Devpost, MLH and open feeds...');
+      const res = await triggerDiscovery();
+      await loadAll();
+      setCrawlNotice(`Discovery Complete: ${res.total_fetched || 0} events crawled, ${res.new_opportunities_added || 0} new added, ${res.duplicates_skipped || 0} duplicates skipped.`);
+      setTimeout(() => setCrawlNotice(null), 8000);
+    } catch (err: any) {
+      setCrawlNotice(`Crawler error: ${err.message || 'Failed to complete discovery'}`);
+      setTimeout(() => setCrawlNotice(null), 5000);
+    } finally {
+      setDiscovering(false);
+    }
   }
 
   async function handleAddPlacement(e: React.FormEvent) {
@@ -278,6 +299,42 @@ export default function AdminDashboardPage() {
         {/* HACKATHONS */}
         {activeTab === 'hackathons' && (
           <div className="space-y-6">
+            {/* Crawler & Discovery Banner */}
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-transparent border border-indigo-200 dark:border-indigo-800/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <Globe className="w-4 h-4 text-indigo-500" />
+                  Autonomous Web Discovery & Scraping Pipeline
+                </h4>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Crawls MLH, Kaggle, Devpost feeds & open challenge platforms. Deduplicates and upserts directly to PostgreSQL.
+                </p>
+                {crawlNotice && (
+                  <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 mt-1 animate-pulse">
+                    {crawlNotice}
+                  </p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={handleTriggerCrawler}
+                disabled={discovering}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white font-bold text-xs rounded-xl flex items-center gap-2 shadow-md shadow-indigo-600/20 cursor-pointer whitespace-nowrap active:scale-95 transition"
+              >
+                {discovering ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+                    <span>Crawling Web...</span>
+                  </>
+                ) : (
+                  <>
+                    <Globe className="w-3.5 h-3.5 text-indigo-200" />
+                    <span>Trigger Crawler Engine</span>
+                  </>
+                )}
+              </button>
+            </div>
+
             <form onSubmit={handleAddHackathon} className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
               <input
                 type="text"

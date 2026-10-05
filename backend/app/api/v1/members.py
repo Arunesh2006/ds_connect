@@ -15,9 +15,11 @@ async def list_members(
     search: Optional[str] = Query(None, description="Search by name or working section"),
     section: Optional[str] = Query(None, description="Filter by working section"),
     year: Optional[int] = Query(None, description="Filter by college year"),
+    limit: int = Query(50, ge=1, le=100, description="Items per page"),
+    offset: int = Query(0, ge=0, description="Page offset"),
     db: AsyncSession = Depends(get_db)
 ):
-    return await MemberService.list_members(db, search=search, section=section, year=year)
+    return await MemberService.list_members(db, search=search, section=section, year=year, limit=limit, offset=offset)
 
 @router.get("/{id}", response_model=MemberResponse, summary="Get member details")
 async def get_member(id: UUID, db: AsyncSession = Depends(get_db)):

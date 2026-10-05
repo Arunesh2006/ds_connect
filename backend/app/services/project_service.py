@@ -9,7 +9,14 @@ from app.schemas.project import ProjectCreate, ProjectUpdate
 
 class ProjectService:
     @staticmethod
-    async def list_projects(db: AsyncSession, search: Optional[str] = None, technology: Optional[str] = None, status: Optional[str] = None) -> List[Project]:
+    async def list_projects(
+        db: AsyncSession,
+        search: Optional[str] = None,
+        technology: Optional[str] = None,
+        status: Optional[str] = None,
+        limit: int = 50,
+        offset: int = 0
+    ) -> List[Project]:
         query = select(Project)
         if search:
             query = query.where(Project.title.ilike(f"%{search}%") | Project.description.ilike(f"%{search}%"))
@@ -19,14 +26,12 @@ class ProjectService:
             # By default show approved projects to students
             query = query.where(Project.status == "approved")
 
-        query = query.order_by(Project.created_at.desc())
-        res = await db.execute(query)
-        projects = res.scalars().all()
-        
         if technology and technology != "all":
-            tech_lower = technology.lower()
-            return [p for p in projects if any(tech_lower in t.lower() for t in p.technologies)]
-        return projects
+            query = query.where(Project.technologies.any(technology))
+
+        query = query.order_by(Project.created_at.desc()).limit(limit).offset(offset)
+        res = await db.execute(query)
+        return res.scalars().all()
 
     @staticmethod
     async def list_all_for_admin(db: AsyncSession) -> List[Project]:

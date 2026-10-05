@@ -11,7 +11,7 @@ create extension if not exists "pgcrypto";
 
 -- 2. Custom Enumeration Types
 do $$ begin
-    create type user_role as enum ('student', 'alumni', 'mentor', 'admin');
+    create type user_role as enum ('student', 'alumni', 'mentor', 'faculty', 'admin');
 exception
     when duplicate_object then null;
 end $$;
@@ -44,12 +44,13 @@ end $$;
 -- 3. PROFILES TABLE (Extends Supabase auth.users)
 -- ==============================================================================
 create table if not exists public.profiles (
-    id uuid primary key references auth.users(id) on delete cascade,
+    id uuid primary key default gen_random_uuid(),
     name text not null,
     email text unique not null,
     avatar_url text,
     college_year int check (college_year between 1 and 5),
     role user_role default 'student'::user_role not null,
+    responsibility text default 'Data Science',
     bio text,
     skills text[] default '{}' not null,
     github_handle text,
@@ -95,7 +96,12 @@ create table if not exists public.opportunities (
     location text default 'Online' not null,
     external_link text,
     tags text[] default '{}' not null,
-    submitted_by uuid not null references public.profiles(id) on delete restrict,
+    submitted_by uuid references public.profiles(id) on delete set null,
+    prize_pool text default '$50,000 USD',
+    start_date timestamptz,
+    end_date timestamptz,
+    mode text default 'Online' not null,
+    team_size text default '1-4' not null,
     created_at timestamptz default timezone('utc'::text, now()) not null,
     updated_at timestamptz default timezone('utc'::text, now()) not null
 );
@@ -103,6 +109,7 @@ create table if not exists public.opportunities (
 create index if not exists idx_opportunities_deadline on public.opportunities(deadline);
 create index if not exists idx_opportunities_status on public.opportunities(status);
 create index if not exists idx_opportunities_type on public.opportunities(type);
+create index if not exists idx_opportunities_mode on public.opportunities(mode);
 
 -- ==============================================================================
 -- 5. TEAM REQUESTS TABLE (Teammate Search for Hackathons/Projects)
@@ -110,7 +117,7 @@ create index if not exists idx_opportunities_type on public.opportunities(type);
 create table if not exists public.team_requests (
     id uuid primary key default gen_random_uuid(),
     opportunity_id uuid not null references public.opportunities(id) on delete cascade,
-    requester_id uuid not null references public.profiles(id) on delete cascade,
+    requester_id uuid references public.profiles(id) on delete cascade,
     title text not null,
     role_needed text not null,
     skills_required text[] default '{}' not null,
@@ -134,10 +141,13 @@ create table if not exists public.projects (
     technologies text[] default '{}' not null,
     repo_url text,
     live_url text,
-    owner_id uuid not null references public.profiles(id) on delete cascade,
+    owner_id uuid references public.profiles(id) on delete set null,
+    status text default 'approved' not null,
     created_at timestamptz default timezone('utc'::text, now()) not null,
     updated_at timestamptz default timezone('utc'::text, now()) not null
 );
+
+create index if not exists idx_projects_status on public.projects(status);
 
 create table if not exists public.project_members (
     project_id uuid not null references public.projects(id) on delete cascade,
@@ -152,7 +162,7 @@ create table if not exists public.project_members (
 -- ==============================================================================
 create table if not exists public.achievements (
     id uuid primary key default gen_random_uuid(),
-    student_id uuid not null references public.profiles(id) on delete cascade,
+    student_id uuid references public.profiles(id) on delete set null,
     category text not null, -- e.g., 'Award', 'Certification', 'Hackathon Win'
     title text not null,
     description text,
@@ -163,15 +173,25 @@ create table if not exists public.achievements (
 
 create table if not exists public.placements (
     id uuid primary key default gen_random_uuid(),
-    student_id uuid not null references public.profiles(id) on delete cascade,
+    student_id uuid references public.profiles(id) on delete set null,
     company text not null,
     role text not null,
-    package_lpa numeric(5, 2), -- CTC in LPA (optional / protected)
-    placement_year int not null,
-    is_verified boolean default false not null,
-    consent_for_public_display boolean default false not null,
+    package_lpa numeric(5, 2), -- CTC in LPA
+    placement_year int default 2026 not null,
+    eligibility text,
+    skills text[] default '{}' not null,
+    location text default 'Hybrid' not null,
+    application_deadline timestamptz,
+    application_link text,
+    description text,
+    status text default 'active' not null,
+    is_verified boolean default true not null,
+    consent_for_public_display boolean default true not null,
     created_at timestamptz default timezone('utc'::text, now()) not null
 );
+
+create index if not exists idx_placements_status on public.placements(status);
+create index if not exists idx_placements_company on public.placements(company);
 
 -- ==============================================================================
 -- 8. INDIA DPDP ACT 2023 CONSENT AUDIT LOG TABLE

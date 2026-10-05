@@ -9,7 +9,14 @@ from app.schemas.member import MemberCreate, MemberUpdate
 
 class MemberService:
     @staticmethod
-    async def list_members(db: AsyncSession, search: Optional[str] = None, section: Optional[str] = None, year: Optional[int] = None) -> List[Profile]:
+    async def list_members(
+        db: AsyncSession,
+        search: Optional[str] = None,
+        section: Optional[str] = None,
+        year: Optional[int] = None,
+        limit: int = 50,
+        offset: int = 0
+    ) -> List[Profile]:
         query = select(Profile)
         if search:
             query = query.where(Profile.name.ilike(f"%{search}%") | Profile.responsibility.ilike(f"%{search}%"))
@@ -22,7 +29,7 @@ class MemberService:
             Profile.role.asc(),
             Profile.college_year.desc().nullslast(),
             Profile.name.asc()
-        )
+        ).limit(limit).offset(offset)
         res = await db.execute(query)
         return res.scalars().all()
 

@@ -15,9 +15,11 @@ async def list_hackathons(
     search: Optional[str] = Query(None, description="Search by title or organizer"),
     mode: Optional[str] = Query(None, description="Filter by mode: Online, In-Person, Hybrid"),
     status: Optional[str] = Query(None, description="Filter by status: published, closed"),
+    limit: int = Query(50, ge=1, le=100, description="Items per page"),
+    offset: int = Query(0, ge=0, description="Page offset"),
     db: AsyncSession = Depends(get_db)
 ):
-    return await HackathonService.list_hackathons(db, search=search, mode=mode, status=status)
+    return await HackathonService.list_hackathons(db, search=search, mode=mode, status=status, limit=limit, offset=offset)
 
 @router.get("/{id}", response_model=HackathonResponse, summary="Get hackathon details")
 async def get_hackathon(id: UUID, db: AsyncSession = Depends(get_db)):
@@ -49,3 +51,16 @@ async def delete_hackathon(
 ):
     await HackathonService.delete_hackathon(db, id)
     return None
+
+@router.post("/discover", summary="Trigger autonomous opportunity discovery & scraping")
+async def trigger_discovery(
+    urls: Optional[List[str]] = None,
+    admin: dict = Depends(require_admin_user)
+) -> dict:
+    """
+    Autonomously discovers, scrapes, extracts, and deduplicates opportunities
+    from Devpost, Kaggle, open challenge boards, and custom supplied seed URLs.
+    """
+    from app.tasks.scrapers.sync_runner import run_all_scrapers
+    result = await run_all_scrapers(extra_urls=urls)
+    return result

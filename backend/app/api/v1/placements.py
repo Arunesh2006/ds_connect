@@ -18,9 +18,11 @@ async def list_placements(
     search: Optional[str] = Query(None, description="Search company or role"),
     location: Optional[str] = Query(None, description="Filter by location"),
     status: Optional[str] = Query(None, description="Filter by status (active/closed)"),
+    limit: int = Query(50, ge=1, le=100, description="Items per page"),
+    offset: int = Query(0, ge=0, description="Page offset"),
     db: AsyncSession = Depends(get_db)
 ):
-    return await PlacementService.list_placements(db, search=search, location=location, status=status)
+    return await PlacementService.list_placements(db, search=search, location=location, status=status, limit=limit, offset=offset)
 
 @router.get("/achievements", response_model=List[AchievementResponse], summary="List achievements and hackathon wins")
 async def list_achievements(db: AsyncSession = Depends(get_db)):
