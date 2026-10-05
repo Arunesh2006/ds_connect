@@ -40,6 +40,7 @@ async def run_all_scrapers(extra_urls: Optional[List[str]] = None) -> Dict[str, 
     
     inserted_count = 0
     skipped_count = 0
+    db_error = None
     
     try:
         async with AsyncSessionLocal() as db:
@@ -100,13 +101,15 @@ async def run_all_scrapers(extra_urls: Optional[List[str]] = None) -> Dict[str, 
                 
             await db.commit()
     except Exception as e:
+        db_error = str(e)
         print(f"[SCRAPER] Database connection notice (ensure DATABASE_URL is set in Render): {e}")
         
     summary = {
-        "status": "success",
+        "status": "success" if not db_error else "db_error",
         "total_fetched": len(scraped_events),
         "new_opportunities_added": inserted_count,
         "duplicates_skipped": skipped_count,
+        "error": db_error,
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
     print(f"[SCRAPER] Complete: {inserted_count} new opportunities added, {skipped_count} duplicates skipped.")

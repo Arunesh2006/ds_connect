@@ -49,9 +49,14 @@ export default function HackathonsPage() {
       setDiscovering(true);
       const res = await triggerDiscovery();
       await loadHackathons();
-      setToastType('success');
-      setToastMessage(`Discovered ${res.total_fetched || 0} events! ${res.new_opportunities_added || 0} new added, ${res.duplicates_skipped || 0} duplicates skipped.`);
-      setTimeout(() => setToastMessage(null), 6000);
+      if (res.error || res.status === 'db_error') {
+        setToastType('error');
+        setToastMessage(`Scraped ${res.total_fetched || 0} events, but Database save failed. Please verify DATABASE_URL in Render.`);
+      } else {
+        setToastType('success');
+        setToastMessage(`Discovered ${res.total_fetched || 0} events! ${res.new_opportunities_added || 0} new added, ${res.duplicates_skipped || 0} duplicates skipped.`);
+      }
+      setTimeout(() => setToastMessage(null), 7000);
     } catch (err: any) {
       setToastType('error');
       setToastMessage(err.message || 'Auto-discovery encountered an issue.');
