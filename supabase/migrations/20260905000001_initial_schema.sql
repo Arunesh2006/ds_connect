@@ -222,72 +222,91 @@ alter table public.placements enable row level security;
 alter table public.user_consents enable row level security;
 
 -- PROFILES POLICIES
+drop policy if exists "Profiles are viewable by everyone" on public.profiles;
 create policy "Profiles are viewable by everyone"
     on public.profiles for select using (true);
 
+drop policy if exists "Users can update their own profile" on public.profiles;
 create policy "Users can update their own profile"
     on public.profiles for update using (auth.uid() = id);
 
 -- OPPORTUNITIES POLICIES
+drop policy if exists "Published opportunities are viewable by everyone" on public.opportunities;
 create policy "Published opportunities are viewable by everyone"
     on public.opportunities for select using (status = 'published');
 
+drop policy if exists "Authenticated users can submit opportunities" on public.opportunities;
 create policy "Authenticated users can submit opportunities"
     on public.opportunities for insert with check (auth.uid() = submitted_by);
 
+drop policy if exists "Submitters and Admins can update their opportunities" on public.opportunities;
 create policy "Submitters and Admins can update their opportunities"
     on public.opportunities for update using (
         auth.uid() = submitted_by 
         or exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
     );
 
+drop policy if exists "Admins can delete opportunities" on public.opportunities;
 create policy "Admins can delete opportunities"
     on public.opportunities for delete using (
         exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
     );
 
 -- TEAM REQUESTS POLICIES
+drop policy if exists "Team requests are viewable by authenticated users" on public.team_requests;
 create policy "Team requests are viewable by authenticated users"
     on public.team_requests for select using (auth.role() = 'authenticated');
 
+drop policy if exists "Users can create team requests" on public.team_requests;
 create policy "Users can create team requests"
     on public.team_requests for insert with check (auth.uid() = requester_id);
 
+drop policy if exists "Requesters can update their team requests" on public.team_requests;
 create policy "Requesters can update their team requests"
     on public.team_requests for update using (auth.uid() = requester_id);
 
+drop policy if exists "Requesters can delete their team requests" on public.team_requests;
 create policy "Requesters can delete their team requests"
     on public.team_requests for delete using (auth.uid() = requester_id);
 
 -- PROJECTS & MEMBERS POLICIES
+drop policy if exists "Projects are viewable by everyone" on public.projects;
 create policy "Projects are viewable by everyone"
     on public.projects for select using (true);
 
+drop policy if exists "Authenticated users can create projects" on public.projects;
 create policy "Authenticated users can create projects"
     on public.projects for insert with check (auth.uid() = owner_id);
 
+drop policy if exists "Project owners can update their projects" on public.projects;
 create policy "Project owners can update their projects"
     on public.projects for update using (auth.uid() = owner_id);
 
+drop policy if exists "Project owners can delete their projects" on public.projects;
 create policy "Project owners can delete their projects"
     on public.projects for delete using (auth.uid() = owner_id);
 
+drop policy if exists "Project members are viewable by everyone" on public.project_members;
 create policy "Project members are viewable by everyone"
     on public.project_members for select using (true);
 
+drop policy if exists "Owners can manage project members" on public.project_members;
 create policy "Owners can manage project members"
     on public.project_members for all using (
         exists (select 1 from public.projects where id = project_id and owner_id = auth.uid())
     );
 
 -- ACHIEVEMENTS POLICIES
+drop policy if exists "Achievements are viewable by everyone" on public.achievements;
 create policy "Achievements are viewable by everyone"
     on public.achievements for select using (true);
 
+drop policy if exists "Students can manage their own achievements" on public.achievements;
 create policy "Students can manage their own achievements"
     on public.achievements for all using (auth.uid() = student_id);
 
 -- PLACEMENTS POLICIES (Privacy Protected)
+drop policy if exists "Placement data visible only if explicitly consented or owner" on public.placements;
 create policy "Placement data visible only if explicitly consented or owner"
     on public.placements for select using (
         consent_for_public_display = true 
@@ -295,9 +314,11 @@ create policy "Placement data visible only if explicitly consented or owner"
         or exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
     );
 
+drop policy if exists "Students can manage their own placement records" on public.placements;
 create policy "Students can manage their own placement records"
     on public.placements for all using (auth.uid() = student_id);
 
 -- USER CONSENTS POLICIES (DPDP Act Compliance)
+drop policy if exists "Users can view and manage their own consents" on public.user_consents;
 create policy "Users can view and manage their own consents"
     on public.user_consents for all using (auth.uid() = user_id);
