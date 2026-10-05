@@ -26,8 +26,12 @@ class HackathonService:
             query = query.where(Opportunity.status == status)
 
         query = query.order_by(Opportunity.deadline.asc()).limit(limit).offset(offset)
-        res = await db.execute(query)
-        return res.scalars().all()
+        try:
+            res = await db.execute(query)
+            return res.scalars().all()
+        except Exception as e:
+            print(f"[HackathonService] Database query error (check DATABASE_URL in Render): {e}")
+            return []
 
     @staticmethod
     async def get_hackathon(db: AsyncSession, hackathon_id: UUID) -> Optional[Opportunity]:

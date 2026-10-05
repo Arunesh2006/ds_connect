@@ -41,63 +41,66 @@ async def run_all_scrapers(extra_urls: Optional[List[str]] = None) -> Dict[str, 
     inserted_count = 0
     skipped_count = 0
     
-    async with AsyncSessionLocal() as db:
-        # Resolve a valid admin user ID or None
-        admin_res = await db.execute(select(Profile.id).where(Profile.role == "admin").limit(1))
-        valid_admin_id = admin_res.scalar_one_or_none()
-        
-        for item in scraped_events:
-            link = item.get("external_link")
-            title = item.get("title", "")
-            location = item.get("location", "Online")
-            mode = item.get("mode", "Online")
-            desc = item.get("description", "")
+    try:
+        async with AsyncSessionLocal() as db:
+            # Resolve a valid admin user ID or None
+            admin_res = await db.execute(select(Profile.id).where(Profile.role == "admin").limit(1))
+            valid_admin_id = admin_res.scalar_one_or_none()
+            
+            for item in scraped_events:
+                link = item.get("external_link")
+                title = item.get("title", "")
+                location = item.get("location", "Online")
+                mode = item.get("mode", "Online")
+                desc = item.get("description", "")
 
-            # Master Location Filter: Must be Bangalore (within ~50km) or totally Online / Digital
-            from app.tasks.scrapers.location_filter import is_bangalore_or_online
-            if not is_bangalore_or_online(location=location, mode=mode, text=f"{title} {desc}"):
-                skipped_count += 1
-                continue
-            
-            # Deduplication Check 1: Check by exact external URL
-            existing = None
-            if link:
-                res = await db.execute(
-                    select(Opportunity).where(Opportunity.external_link == link)
+                # Master Location Filter: Must be Bangalore (within ~50km) or totally Online / Digital
+                from app.tasks.scrapers.location_filter import is_bangalore_or_online
+                if not is_bangalore_or_online(location=location, mode=mode, text=f"{title} {desc}"):
+                    skipped_count += 1
+                    continue
+                
+                # Deduplication Check 1: Check by exact external URL
+                existing = None
+                if link:
+                    res = await db.execute(
+                        select(Opportunity).where(Opportunity.external_link == link)
+                    )
+                    existing = res.scalar_one_or_none()
+                    
+                # Deduplication Check 2: Check by exact title
+                if not existing and title:
+                    res = await db.execute(
+                        select(Opportunity).where(Opportunity.title == title)
+                    )
+                    existing = res.scalar_one_or_none()
+                    
+                if existing:
+                    skipped_count += 1
+                    continue  # Already in database, skip!
+                    
+                # Create new Opportunity record
+                new_opp = Opportunity(
+                    title=item["title"][:150],
+                    description=item["description"],
+                    type=item.get("type", "hackathon"),
+                    status="published",
+                    organizer=item.get("organizer", "External Source"),
+                    deadline=item["deadline"],
+                    location=item.get("location", "Online"),
+                    external_link=link,
+                    prize_pool=item.get("prize_pool", "$25,000 USD"),
+                    mode=item.get("mode", "Online"),
+                    team_size=item.get("team_size", "1-4 Members"),
+                    tags=item.get("tags", ["Data Science"]),
+                    submitted_by=valid_admin_id
                 )
-                existing = res.scalar_one_or_none()
+                db.add(new_opp)
+                inserted_count += 1
                 
-            # Deduplication Check 2: Check by exact title
-            if not existing and title:
-                res = await db.execute(
-                    select(Opportunity).where(Opportunity.title == title)
-                )
-                existing = res.scalar_one_or_none()
-                
-            if existing:
-                skipped_count += 1
-                continue  # Already in database, skip!
-                
-            # Create new Opportunity record
-            new_opp = Opportunity(
-                title=item["title"][:150],
-                description=item["description"],
-                type=item.get("type", "hackathon"),
-                status="published",
-                organizer=item.get("organizer", "External Source"),
-                deadline=item["deadline"],
-                location=item.get("location", "Online"),
-                external_link=link,
-                prize_pool=item.get("prize_pool", "$25,000 USD"),
-                mode=item.get("mode", "Online"),
-                team_size=item.get("team_size", "1-4 Members"),
-                tags=item.get("tags", ["Data Science"]),
-                submitted_by=valid_admin_id
-            )
-            db.add(new_opp)
-            inserted_count += 1
-            
-        await db.commit()
+            await db.commit()
+    except Exception as e:
+        print(f"[SCRAPER] Database connection notice (ensure DATABASE_URL is set in Render): {e}")
         
     summary = {
         "status": "success",
