@@ -31,6 +31,7 @@ export default function HackathonsPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
 
   useEffect(() => {
     loadHackathons();
@@ -48,11 +49,13 @@ export default function HackathonsPage() {
       setDiscovering(true);
       const res = await triggerDiscovery();
       await loadHackathons();
+      setToastType('success');
       setToastMessage(`Discovered ${res.total_fetched || 0} events! ${res.new_opportunities_added || 0} new added, ${res.duplicates_skipped || 0} duplicates skipped.`);
       setTimeout(() => setToastMessage(null), 6000);
     } catch (err: any) {
+      setToastType('error');
       setToastMessage(err.message || 'Auto-discovery encountered an issue.');
-      setTimeout(() => setToastMessage(null), 4000);
+      setTimeout(() => setToastMessage(null), 6000);
     } finally {
       setDiscovering(false);
     }
@@ -60,6 +63,7 @@ export default function HackathonsPage() {
 
   function handleSuccess() {
     loadHackathons();
+    setToastType('success');
     setToastMessage('Hackathon added successfully!');
     setTimeout(() => setToastMessage(null), 4000);
   }
@@ -84,8 +88,8 @@ export default function HackathonsPage() {
 
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-emerald-600 text-white text-xs font-bold px-4 py-3 rounded-2xl shadow-xl animate-slideUp">
-          <Check className="w-4 h-4" />
+        <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 ${toastType === 'error' ? 'bg-rose-600' : 'bg-emerald-600'} text-white text-xs font-bold px-4 py-3 rounded-2xl shadow-xl animate-slideUp`}>
+          {toastType === 'error' ? <AlertCircle className="w-4 h-4 shrink-0" /> : <Check className="w-4 h-4 shrink-0" />}
           <span>{toastMessage}</span>
         </div>
       )}

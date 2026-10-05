@@ -100,13 +100,27 @@ export async function deleteHackathon(id: string): Promise<boolean> {
 }
 
 export async function triggerDiscovery(urls?: string[]): Promise<any> {
-  const res = await fetch(`${API_BASE}/api/v1/hackathons/discover`, {
-    method: 'POST',
-    headers: getAuthHeaders(),
-    body: JSON.stringify(urls || null),
-  });
-  if (!res.ok) throw new Error('Failed to run autonomous opportunity discovery');
-  return await res.json();
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/hackathons/discover`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(urls || null),
+    });
+    if (!res.ok) {
+      let errMsg = `Discovery failed (HTTP ${res.status})`;
+      try {
+        const errJson = await res.json();
+        if (errJson.detail) errMsg = String(errJson.detail);
+      } catch {}
+      throw new Error(errMsg);
+    }
+    return await res.json();
+  } catch (err: any) {
+    if (err.message && (err.message.includes('fetch') || err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
+      throw new Error('Backend API unreachable. Please check NEXT_PUBLIC_API_URL in Vercel settings.');
+    }
+    throw err;
+  }
 }
 
 export const fetchOpportunities = fetchHackathons;

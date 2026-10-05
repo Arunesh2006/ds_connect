@@ -55,7 +55,7 @@ async def delete_hackathon(
 @router.post("/discover", summary="Trigger autonomous opportunity discovery & scraping")
 async def trigger_discovery(
     urls: Optional[List[str]] = None,
-    admin: dict = Depends(require_admin_user)
+    user: Optional[dict] = Depends(get_optional_user)
 ) -> dict:
     """
     Autonomously discovers, scrapes, extracts, and deduplicates opportunities
